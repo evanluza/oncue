@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | OnCue",
   },
   description: "Drop a track. Mark it up. Share the link. Timestamped audio annotation for musicians, teachers, and creators.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oncue.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oncue.audio"),
   icons: {
     icon: "/oc-icon-orange.png",
     apple: "/oc-icon-orange.png",
