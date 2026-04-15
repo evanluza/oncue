@@ -15,7 +15,12 @@ import Link from "next/link"
 import type { Note, MacroType } from "@/lib/types"
 import { getContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
+import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import * as db from "@/lib/db"
+
+function isAudioFile(file: File) {
+  return file.type === "audio/wav" || file.type === "audio/mpeg"
+}
 
 export default function AnnotatePage() {
   const [audioFile, setAudioFile] = useState<string | null>(null)
@@ -26,6 +31,8 @@ export default function AnnotatePage() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null)
+  const [isDecoding, setIsDecoding] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const [macroFeedback, setMacroFeedback] = useState<{ timestamp: number; type: MacroType } | null>(null)
 
@@ -82,6 +89,7 @@ export default function AnnotatePage() {
   }, [audioFile])
 
   const decodeAudio = useCallback(async (file: File) => {
+    setIsDecoding(true)
     try {
       const arrayBuffer = await file.arrayBuffer()
       const audioContext = new AudioContext()
@@ -90,30 +98,50 @@ export default function AnnotatePage() {
       audioContext.close()
     } catch (err) {
       console.error("Failed to decode audio:", err)
+    } finally {
+      setIsDecoding(false)
     }
   }, [])
 
+  const loadFile = useCallback((file: File) => {
+    if (!isAudioFile(file)) return
+    const url = URL.createObjectURL(file)
+    setAudioFile(url)
+    setRawFile(file)
+    setFileName(file.name)
+    setNotes([])
+    setCurrentTime(0)
+    setIsPlaying(false)
+    setAudioBuffer(null)
+    setProjectId(null)
+    setShareUrl(null)
+    decodeAudio(file)
+  }, [decodeAudio])
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && (file.type === "audio/wav" || file.type === "audio/mpeg")) {
-      const url = URL.createObjectURL(file)
-      setAudioFile(url)
-      setRawFile(file)
-      setFileName(file.name)
-      setNotes([])
-      setCurrentTime(0)
-      setIsPlaying(false)
-      setAudioBuffer(null)
-      setProjectId(null)
-      setShareUrl(null)
-      decodeAudio(file)
-    }
+    if (file) loadFile(file)
+  }
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) loadFile(file)
   }
 
   const handleShare = async () => {
     if (!rawFile || !contributor) return
     if (shareUrl) {
-      // Already shared — just copy again
       await navigator.clipboard.writeText(shareUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
@@ -130,7 +158,6 @@ export default function AnnotatePage() {
       )
       setProjectId(project.id)
 
-      // Save existing annotations to backend
       for (const note of notes) {
         await db.addAnnotation(
           project.id,
@@ -154,7 +181,7 @@ export default function AnnotatePage() {
     }
   }
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
     if (!audio || !audioFile) return
 
@@ -163,7 +190,7 @@ export default function AnnotatePage() {
     } else {
       audio.play().catch(() => setIsPlaying(false))
     }
-  }
+  }, [audioFile, isPlaying])
 
   const handleSeek = (time: number) => {
     const audio = audioRef.current
@@ -172,13 +199,16 @@ export default function AnnotatePage() {
     setCurrentTime(time)
   }
 
-  const handleSkip = (seconds: number) => {
+  const handleSkip = useCallback((seconds: number) => {
     const audio = audioRef.current
     if (!audio) return
-    const newTime = Math.max(0, Math.min(duration, currentTime + seconds))
+    const newTime = Math.max(0, Math.min(duration, audio.currentTime + seconds))
     audio.currentTime = newTime
     setCurrentTime(newTime)
-  }
+  }, [duration])
+
+  // Keyboard: spacebar, arrow keys
+  useKeyboardControls({ onPlayPause: handlePlayPause, onSkip: handleSkip })
 
   const handleAddNote = async (timestamp: number) => {
     const newNote: Note = {
@@ -189,13 +219,11 @@ export default function AnnotatePage() {
     }
     setNotes((prev) => [...prev, newNote].sort((a, b) => a.timestamp - b.timestamp))
 
-    // Sync to backend if shared
     if (projectId && contributor) {
       try {
         const row = await db.addAnnotation(
           projectId, timestamp, "", contributor.name, contributor.color
         )
-        // Update local note with real ID
         setNotes((prev) =>
           prev.map((n) => (n.id === newNote.id ? { ...n, id: row.id } : n))
         )
@@ -229,7 +257,6 @@ export default function AnnotatePage() {
     setMacroFeedback({ timestamp, type })
     setTimeout(() => setMacroFeedback(null), 1000)
 
-    // Sync to backend if shared
     if (projectId && contributor) {
       try {
         const row = await db.addAnnotation(
@@ -280,7 +307,12 @@ export default function AnnotatePage() {
 
   if (!audioFile) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div
+        className="flex min-h-dvh flex-col bg-background"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <header className="border-b border-border/50">
           <div className="flex h-14 items-center justify-between px-4">
             <Link href="/" className="flex items-center gap-2">
@@ -296,15 +328,23 @@ export default function AnnotatePage() {
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col items-center justify-center p-4">
+        <div className="flex flex-1 flex-col items-center justify-center p-6">
           <div className="max-w-md text-center space-y-6">
-            <div className="mx-auto w-20 h-20 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
+            <div
+              className={`mx-auto w-20 h-20 rounded-2xl border flex items-center justify-center transition-all ${
+                isDragging
+                  ? "bg-accent/20 border-accent scale-110"
+                  : "bg-accent/10 border-accent/20"
+              }`}
+            >
               <Upload className="h-8 w-8 text-accent" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-foreground">Upload an audio file</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                {isDragging ? "Drop it here" : "Upload an audio file"}
+              </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Drop in a .wav or .mp3 to start annotating with timestamped notes, voice memos, and quick macros.
+                Drag and drop a .wav or .mp3, or click below to browse.
               </p>
             </div>
             <Button
@@ -328,20 +368,20 @@ export default function AnnotatePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background pb-32">
+    <div className="flex min-h-dvh flex-col bg-background pb-24 sm:pb-32">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+        <div className="flex h-14 items-center justify-between px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <Image src="/oc-icon-orange.png" alt="OnCue" width={22} height={22} />
-              <span className="text-sm font-semibold text-foreground tracking-tight">oncue</span>
+              <span className="text-sm font-semibold text-foreground tracking-tight hidden sm:inline">oncue</span>
             </Link>
-            <div className="w-px h-5 bg-border/50" />
-            <h1 className="text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">{fileName}</h1>
+            <div className="w-px h-5 bg-border/50 hidden sm:block" />
+            <h1 className="text-sm text-muted-foreground truncate">{fileName}</h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {contributor && (
               <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground mr-2">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: contributor.color }} />
@@ -349,15 +389,14 @@ export default function AnnotatePage() {
               </div>
             )}
 
-            {/* Share button */}
             <Button
               variant={shareUrl ? "ghost" : "default"}
               size="sm"
               onClick={handleShare}
               disabled={isSharing}
               className={shareUrl
-                ? "gap-2 text-muted-foreground hover:text-foreground"
-                : "gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
+                ? "gap-1.5 text-muted-foreground hover:text-foreground"
+                : "gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
               }
             >
               {isSharing ? (
@@ -378,7 +417,7 @@ export default function AnnotatePage() {
               variant="ghost"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              className="gap-2 text-muted-foreground hover:text-foreground"
+              className="gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <Upload className="h-4 w-4" />
               <span className="hidden sm:inline">Upload</span>
@@ -404,6 +443,7 @@ export default function AnnotatePage() {
             onAddNote={handleAddNote}
             macroFeedback={macroFeedback}
             audioBuffer={audioBuffer}
+            isDecoding={isDecoding}
           />
         </div>
 

@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useRef, useEffect, useMemo } from "react"
+import { useRef, useEffect, useMemo, useCallback } from "react"
+import { Loader2 } from "lucide-react"
 import type { Note, MacroType } from "@/lib/types"
 
 type WaveformPlayerProps = {
@@ -13,6 +14,7 @@ type WaveformPlayerProps = {
   onAddNote: (timestamp: number) => void
   macroFeedback?: { timestamp: number; type: MacroType } | null
   audioBuffer?: AudioBuffer | null
+  isDecoding?: boolean
 }
 
 function computeWaveformData(audioBuffer: AudioBuffer, barCount: number): number[] {
@@ -32,7 +34,6 @@ function computeWaveformData(audioBuffer: AudioBuffer, barCount: number): number
     bars.push(sum / (end - start))
   }
 
-  // Normalize to 0-1
   const max = Math.max(...bars, 0.001)
   return bars.map((b) => b / max)
 }
@@ -51,8 +52,10 @@ export function WaveformPlayer({
   onAddNote,
   macroFeedback,
   audioBuffer,
+  isDecoding,
 }: WaveformPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const BAR_COUNT = 160
 
@@ -63,7 +66,8 @@ export function WaveformPlayer({
     return generateFallbackBars(BAR_COUNT)
   }, [audioBuffer, BAR_COUNT])
 
-  useEffect(() => {
+  // Handle resize
+  const draw = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -79,12 +83,11 @@ export function WaveformPlayer({
     ctx.clearRect(0, 0, rect.width, rect.height)
 
     const barWidth = rect.width / BAR_COUNT
-    const gap = 1.5
+    const gap = Math.max(1, barWidth * 0.15)
     const progress = duration > 0 ? currentTime / duration : 0
     const maxBarHeight = rect.height * 0.85
     const centerY = rect.height / 2
 
-    // Draw bars
     for (let i = 0; i < BAR_COUNT; i++) {
       const amplitude = waveformData[i]
       const h = Math.max(2, amplitude * maxBarHeight)
@@ -92,11 +95,9 @@ export function WaveformPlayer({
       const y = centerY - h / 2
       const barProgress = i / BAR_COUNT
 
-      if (barProgress <= progress) {
-        ctx.fillStyle = "oklch(0.50 0.13 45)"
-      } else {
-        ctx.fillStyle = "oklch(0.68 0.18 45)"
-      }
+      ctx.fillStyle = barProgress <= progress
+        ? "oklch(0.50 0.13 45)"
+        : "oklch(0.68 0.18 45)"
 
       const w = barWidth - gap
       const radius = Math.min(w / 2, 1.5)
@@ -105,12 +106,10 @@ export function WaveformPlayer({
       ctx.fill()
     }
 
-    // Draw note markers
     if (duration > 0) {
       notes.forEach((note) => {
         const x = (note.timestamp / duration) * rect.width
 
-        // Vertical line
         ctx.strokeStyle = "oklch(1 0 0 / 0.25)"
         ctx.lineWidth = 1
         ctx.beginPath()
@@ -118,7 +117,6 @@ export function WaveformPlayer({
         ctx.lineTo(x, centerY + maxBarHeight * 0.45)
         ctx.stroke()
 
-        // Dot
         ctx.fillStyle = "oklch(1 0 0 / 0.9)"
         ctx.beginPath()
         ctx.arc(x, 8, 3.5, 0, Math.PI * 2)
@@ -126,7 +124,6 @@ export function WaveformPlayer({
       })
     }
 
-    // Macro feedback
     if (macroFeedback && duration > 0) {
       const x = (macroFeedback.timestamp / duration) * rect.width
 
@@ -142,7 +139,6 @@ export function WaveformPlayer({
       ctx.fill()
     }
 
-    // Playhead
     if (duration > 0) {
       const playheadX = progress * rect.width
 
@@ -153,7 +149,6 @@ export function WaveformPlayer({
       ctx.lineTo(playheadX, rect.height)
       ctx.stroke()
 
-      // Playhead top indicator
       ctx.fillStyle = "oklch(1 0 0)"
       ctx.beginPath()
       ctx.moveTo(playheadX - 4, 0)
@@ -164,13 +159,35 @@ export function WaveformPlayer({
     }
   }, [currentTime, duration, notes, macroFeedback, waveformData, BAR_COUNT])
 
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current
-    if (!canvas || duration === 0) return
+  useEffect(() => {
+    draw()
+  }, [draw])
 
+  // Resize observer for responsive canvas
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new ResizeObserver(() => draw())
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [draw])
+
+  const getTimeFromX = (clientX: number) => {
+    const canvas = canvasRef.current
+    if (!canvas || duration === 0) return null
+    const rect = canvas.getBoundingClientRect()
+    const x = clientX - rect.left
+    return (x / rect.width) * duration
+  }
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const clickedTime = getTimeFromX(e.clientX)
+    if (clickedTime === null) return
+
+    const canvas = canvasRef.current!
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
-    const clickedTime = (x / rect.width) * duration
 
     const clickedNote = notes.find((note) => {
       const noteX = (note.timestamp / duration) * rect.width
@@ -186,6 +203,14 @@ export function WaveformPlayer({
     }
   }
 
+  // Touch: tap to seek
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.changedTouches.length === 0) return
+    const touch = e.changedTouches[0]
+    const time = getTimeFromX(touch.clientX)
+    if (time !== null) onSeek(time)
+  }
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
@@ -193,14 +218,24 @@ export function WaveformPlayer({
   }
 
   return (
-    <div className="relative px-4 pt-4 pb-3">
+    <div className="relative px-3 sm:px-4 pt-3 sm:pt-4 pb-2 sm:pb-3">
       <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted-foreground/50 font-mono">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration)}</span>
       </div>
 
-      <div className="relative rounded-lg bg-secondary/10 overflow-hidden border border-border/20">
-        <canvas ref={canvasRef} className="w-full h-36 cursor-crosshair" onClick={handleCanvasClick} />
+      <div ref={containerRef} className="relative rounded-lg bg-secondary/10 overflow-hidden border border-border/20">
+        {isDecoding && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+          </div>
+        )}
+        <canvas
+          ref={canvasRef}
+          className="w-full h-24 sm:h-36 cursor-crosshair touch-none"
+          onClick={handleCanvasClick}
+          onTouchEnd={handleTouchEnd}
+        />
       </div>
     </div>
   )

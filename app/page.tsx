@@ -43,7 +43,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
-              Leave timestamped notes, voice memos, and quick-fire callouts on any audio file. Then share it with anyone for feedback.
+              Leave timestamped notes and quick-fire callouts on any audio file. Then share it with anyone for feedback.
             </p>
 
             <div className="flex items-center justify-center gap-3 pt-2">
@@ -120,7 +120,7 @@ export default function LandingPage() {
                 icon: <MessageSquare className="h-5 w-5" />,
                 step: "02",
                 title: "Annotate",
-                description: "Add timestamped notes, voice memos, and quick macros as you listen. Flag highlights, issues, ideas.",
+                description: "Add timestamped notes and quick macros as you listen. Flag highlights, issues, and ideas.",
               },
               {
                 icon: <Share2 className="h-5 w-5" />,

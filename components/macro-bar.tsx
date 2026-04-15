@@ -31,7 +31,6 @@ const macroActions: MacroAction[] = [
 
 export function MacroBar({ currentTime, isPlaying, onMacroTrigger }: MacroBarProps) {
   const [recentTrigger, setRecentTrigger] = useState<MacroType | null>(null)
-  const [hoveredAction, setHoveredAction] = useState<MacroType | null>(null)
 
   const handleMacroClick = (type: MacroType) => {
     onMacroTrigger(type, currentTime)
@@ -40,22 +39,19 @@ export function MacroBar({ currentTime, isPlaying, onMacroTrigger }: MacroBarPro
   }
 
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50">
-      <div className="bg-card/90 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-1.5">
-        <div className="grid grid-cols-7 gap-1.5">
+    <div className="fixed bottom-0 left-0 right-0 z-50 sm:bottom-5 sm:left-1/2 sm:right-auto sm:-translate-x-1/2">
+      <div className="bg-card/95 backdrop-blur-md border-t border-border/50 sm:border sm:rounded-2xl shadow-2xl p-1.5 sm:p-1.5 safe-bottom">
+        <div className="flex gap-1 sm:gap-1.5 justify-center overflow-x-auto no-scrollbar">
           {macroActions.map((action) => {
             const isActive = recentTrigger === action.type
-            const isHovered = hoveredAction === action.type
 
             return (
               <button
                 key={action.type}
                 onClick={() => handleMacroClick(action.type)}
-                onMouseEnter={() => setHoveredAction(action.type)}
-                onMouseLeave={() => setHoveredAction(null)}
                 className={cn(
-                  "relative flex items-center justify-center",
-                  "w-14 h-14 rounded-lg",
+                  "relative flex flex-col items-center justify-center gap-0.5",
+                  "w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0",
                   "transition-all duration-100 active:scale-90",
                   "bg-secondary/30 hover:bg-secondary/50",
                   isActive && "bg-accent/20 ring-2 ring-accent/60 shadow-[0_0_12px_rgba(255,135,50,0.4)]",
@@ -70,12 +66,9 @@ export function MacroBar({ currentTime, isPlaying, onMacroTrigger }: MacroBarPro
                 >
                   {action.icon}
                 </span>
-
-                {isHovered && (
-                  <div className="absolute bottom-full mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md shadow-lg whitespace-nowrap animate-in fade-in zoom-in-95 duration-100 pointer-events-none border border-border/50">
-                    {action.label}
-                  </div>
-                )}
+                <span className="text-[9px] text-muted-foreground/60 sm:hidden leading-none">
+                  {action.label}
+                </span>
               </button>
             )
           })}

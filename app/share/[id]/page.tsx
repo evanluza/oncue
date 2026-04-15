@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import { useParams } from "next/navigation"
 import { WaveformPlayer } from "@/components/waveform-player"
 import { PlaybackControls } from "@/components/playback-controls"
@@ -121,7 +122,7 @@ export default function SharePage() {
     }
   }, [project?.audio_url])
 
-  const handlePlayPause = () => {
+  const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
     if (isPlaying) {
@@ -129,7 +130,7 @@ export default function SharePage() {
     } else {
       audio.play().catch(() => setIsPlaying(false))
     }
-  }
+  }, [isPlaying])
 
   const handleSeek = (time: number) => {
     const audio = audioRef.current
@@ -138,13 +139,15 @@ export default function SharePage() {
     setCurrentTime(time)
   }
 
-  const handleSkip = (seconds: number) => {
+  const handleSkip = useCallback((seconds: number) => {
     const audio = audioRef.current
     if (!audio) return
-    const newTime = Math.max(0, Math.min(duration, currentTime + seconds))
+    const newTime = Math.max(0, Math.min(duration, audio.currentTime + seconds))
     audio.currentTime = newTime
     setCurrentTime(newTime)
-  }
+  }, [duration])
+
+  useKeyboardControls({ onPlayPause: handlePlayPause, onSkip: handleSkip })
 
   // Convert annotations to the notes format the waveform expects
   const notesForWaveform = annotations.map((a) => ({
@@ -247,20 +250,20 @@ export default function SharePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background pb-32">
+    <div className="flex min-h-dvh flex-col bg-background pb-24 sm:pb-32">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
+        <div className="flex h-14 items-center justify-between px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <Image src="/oc-icon-orange.png" alt="OnCue" width={22} height={22} />
-              <span className="text-sm font-semibold text-foreground tracking-tight">oncue</span>
+              <span className="text-sm font-semibold text-foreground tracking-tight hidden sm:inline">oncue</span>
             </Link>
-            <div className="w-px h-5 bg-border/50" />
-            <h1 className="text-sm text-muted-foreground truncate max-w-[200px] sm:max-w-none">{project.name}</h1>
+            <div className="w-px h-5 bg-border/50 hidden sm:block" />
+            <h1 className="text-sm text-muted-foreground truncate">{project.name}</h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
               Shared by
               <span className="flex items-center gap-1.5 text-muted-foreground">
