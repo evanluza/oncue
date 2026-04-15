@@ -205,11 +205,10 @@ export default function AnnotatePage() {
     }
   }
 
-  const handleMacroTrigger = async (type: MacroType, timestamp: number, audioBlob?: Blob) => {
+  const handleMacroTrigger = async (type: MacroType, timestamp: number) => {
     const macroLabels: Record<MacroType, string> = {
       highlight: "🔥",
       issue: "❗ Issue flagged",
-      "voice-note": "🎤 Voice note",
       "too-loud": "🔊 Volume too high",
       "too-quiet": "🔉 Volume too low",
       "adjust-levels": "🎚️ Needs level adjustment",
@@ -222,7 +221,6 @@ export default function AnnotatePage() {
       timestamp,
       text: macroLabels[type],
       type,
-      audioBlob,
       createdAt: new Date(),
     }
 

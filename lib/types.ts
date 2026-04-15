@@ -1,7 +1,6 @@
 export type MacroType =
   | "highlight"
   | "issue"
-  | "voice-note"
   | "too-loud"
   | "too-quiet"
   | "adjust-levels"
@@ -13,6 +12,5 @@ export type Note = {
   timestamp: number
   text: string
   type?: MacroType
-  audioBlob?: Blob
   createdAt: Date
 }

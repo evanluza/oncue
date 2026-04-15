@@ -174,7 +174,6 @@ export default function SharePage() {
     const macroLabels: Record<MacroType, string> = {
       highlight: "🔥",
       issue: "❗ Issue flagged",
-      "voice-note": "🎤 Voice note",
       "too-loud": "🔊 Volume too high",
       "too-quiet": "🔉 Volume too low",
       "adjust-levels": "🎚️ Needs level adjustment",
@@ -317,7 +316,7 @@ export default function SharePage() {
 
       <MacroBar currentTime={currentTime} isPlaying={isPlaying} onMacroTrigger={handleMacroTrigger} />
 
-      <audio ref={audioRef} src={project.audio_url} crossOrigin="anonymous" />
+      <audio ref={audioRef} src={project.audio_url} />
     </div>
   )
 }

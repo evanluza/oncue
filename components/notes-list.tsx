@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { Note } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { Trash2, Play } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type NotesListProps = {
@@ -16,7 +16,6 @@ type NotesListProps = {
 
 export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDeleteNote }: NotesListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [playingVoiceNote, setPlayingVoiceNote] = useState<string | null>(null)
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -27,25 +26,6 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
 
   const isNearCurrentTime = (timestamp: number) => {
     return Math.abs(timestamp - currentTime) < 0.5
-  }
-
-  const playVoiceNote = (note: Note) => {
-    if (!note.audioBlob) return
-
-    const audioUrl = URL.createObjectURL(note.audioBlob)
-    const audio = new Audio(audioUrl)
-
-    audio.onplay = () => setPlayingVoiceNote(note.id)
-    audio.onended = () => {
-      setPlayingVoiceNote(null)
-      URL.revokeObjectURL(audioUrl)
-    }
-    audio.onerror = () => {
-      setPlayingVoiceNote(null)
-      URL.revokeObjectURL(audioUrl)
-    }
-
-    audio.play()
   }
 
   if (notes.length === 0) {
@@ -78,28 +58,12 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
               isActive && "bg-accent/5",
             )}
           >
-            <div className="flex-shrink-0 font-mono text-[11px] text-muted-foreground/50">
+            <div className="shrink-0 font-mono text-[11px] text-muted-foreground/50">
               {formatTime(note.timestamp)}
             </div>
 
             {/* Note content */}
             <div className="flex-1 min-w-0">
-              {note.type === "voice-note" && note.audioBlob && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    playVoiceNote(note)
-                  }}
-                  className="mb-2 gap-2"
-                  disabled={playingVoiceNote === note.id}
-                >
-                  <Play className="h-3 w-3" />
-                  {playingVoiceNote === note.id ? "Playing..." : "Play recording"}
-                </Button>
-              )}
-
               {isEditing && isEditableType ? (
                 <textarea
                   autoFocus
@@ -108,12 +72,8 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
                   onBlur={() => setEditingId(null)}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      setEditingId(null)
-                    }
-                    if (e.key === "Enter" && e.metaKey) {
-                      setEditingId(null)
-                    }
+                    if (e.key === "Escape") setEditingId(null)
+                    if (e.key === "Enter" && e.metaKey) setEditingId(null)
                   }}
                   placeholder="Add your note here..."
                   maxLength={120}
@@ -124,9 +84,7 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
                 <div
                   onClick={(e) => {
                     e.stopPropagation()
-                    if (isEditableType) {
-                      setEditingId(note.id)
-                    }
+                    if (isEditableType) setEditingId(note.id)
                   }}
                   className={cn("w-full text-left", isEditableType && "cursor-text")}
                 >
@@ -150,7 +108,7 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
             <Button
               variant="ghost"
               size="icon"
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => {
                 e.stopPropagation()
                 onDeleteNote(note.id)
