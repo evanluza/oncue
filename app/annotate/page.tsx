@@ -18,8 +18,14 @@ import type { Contributor } from "@/lib/contributor"
 import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import * as db from "@/lib/db"
 
+const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
+
 function isAudioFile(file: File) {
   return file.type === "audio/wav" || file.type === "audio/mpeg"
+}
+
+function formatFileSize(bytes: number) {
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }
 
 export default function AnnotatePage() {
@@ -33,6 +39,7 @@ export default function AnnotatePage() {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null)
   const [isDecoding, setIsDecoding] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const [macroFeedback, setMacroFeedback] = useState<{ timestamp: number; type: MacroType } | null>(null)
 
@@ -104,7 +111,18 @@ export default function AnnotatePage() {
   }, [])
 
   const loadFile = useCallback((file: File) => {
-    if (!isAudioFile(file)) return
+    setUploadError(null)
+
+    if (!isAudioFile(file)) {
+      setUploadError("Only .mp3 and .wav files are supported.")
+      return
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError(`File is ${formatFileSize(file.size)}. Max size is 25MB — try a compressed .mp3.`)
+      return
+    }
+
     const url = URL.createObjectURL(file)
     setAudioFile(url)
     setRawFile(file)
@@ -346,7 +364,13 @@ export default function AnnotatePage() {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Drag and drop a .wav or .mp3, or click below to browse.
               </p>
+              <p className="text-[11px] text-muted-foreground/50">Max file size: 25MB</p>
             </div>
+            {uploadError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {uploadError}
+              </div>
+            )}
             <Button
               onClick={() => fileInputRef.current?.click()}
               className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90 h-11 px-6"
