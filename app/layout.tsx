@@ -4,22 +4,35 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "OnCue — Audio Annotation",
+  title: {
+    default: "OnCue — Audio Annotation",
+    template: "%s | OnCue",
+  },
   description: "Drop a track. Mark it up. Share the link. Timestamped audio annotation for musicians, teachers, and creators.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oncue.vercel.app"),
   icons: {
     icon: "/oc-icon-orange.png",
     apple: "/oc-icon-orange.png",
   },
   openGraph: {
     title: "OnCue — Audio Annotation",
-    description: "Drop a track. Mark it up. Share the link.",
+    description: "Drop a track. Mark it up. Share the link. Timestamped audio annotation for musicians, teachers, and creators.",
     siteName: "OnCue",
     type: "website",
+    images: [
+      {
+        url: "/oncue-og.png",
+        width: 1200,
+        height: 630,
+        alt: "OnCue — Drop a track. Mark it up. Share the link.",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "OnCue — Audio Annotation",
     description: "Drop a track. Mark it up. Share the link.",
+    images: ["/oncue-og.png"],
   },
 }
 

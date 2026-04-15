@@ -8,19 +8,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
 
   return {
-    title: "OnCue — Shared Audio Annotation",
-    description: "Listen and leave feedback on this shared audio track with timestamped annotations.",
+    title: "Shared Audio Annotation",
+    description: "Someone shared an audio track for your feedback. Listen, annotate, and collaborate on OnCue.",
     openGraph: {
-      title: "OnCue — Audio Annotation",
+      title: "OnCue — Listen & Leave Feedback",
       description: "Someone shared an audio track for your feedback. Listen, annotate, and collaborate.",
       type: "website",
       url: `/share/${id}`,
       siteName: "OnCue",
+      images: [
+        {
+          url: "/oncue-og.png",
+          width: 1200,
+          height: 630,
+          alt: "OnCue — Drop a track. Mark it up. Share the link.",
+        },
+      ],
     },
     twitter: {
-      card: "summary",
-      title: "OnCue — Audio Annotation",
+      card: "summary_large_image",
+      title: "OnCue — Listen & Leave Feedback",
       description: "Someone shared an audio track for your feedback. Listen, annotate, and collaborate.",
+      images: ["/oncue-og.png"],
     },
   }
 }
