@@ -45,11 +45,17 @@ highlight, issue, note, too-loud, too-quiet, adjust-levels, idea
 ## Features
 - Real waveform rendering from audio data (Web Audio API decodeAudioData)
 - Spacebar play/pause, arrow key skip (±5s)
-- Drag-and-drop file upload
+- Drag-and-drop file upload with 25MB size limit + file type validation
 - Contributor identity (name + color picker, persisted in localStorage)
 - Share button uploads audio to Supabase, copies share link
-- OG image + social meta tags for rich link previews
+- OG image (oncue-og.png) + social meta tags for rich link previews (summary_large_image)
 - Mobile-optimized: responsive waveform, touch-to-seek, bottom-docked macro bar, iOS safe areas
+
+## Limits
+- **File size:** 25MB max per upload (validated client-side with clear error message)
+- **File types:** .mp3 and .wav only
+- **No auth yet** — contributor identity is name + color via localStorage
+- **No per-user upload limits yet** — planned for post-MVP (track via upload_logs table)
 
 ## Build & Run
 ```bash
