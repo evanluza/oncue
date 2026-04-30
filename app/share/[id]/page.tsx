@@ -120,7 +120,7 @@ export default function SharePage() {
       audio.removeEventListener("pause", handlePause)
       audio.removeEventListener("error", handleError)
     }
-  }, [project?.audio_url])
+  }, [project?.audio_url, showContributorPrompt])
 
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
