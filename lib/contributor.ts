@@ -13,16 +13,24 @@ const COLORS = [
   "#A8E6CF", // mint
 ]
 
+export const GUEST_NAME = "Guest"
+
 export type Contributor = {
   name: string
   color: string
+  /** False until the person has actually chosen a name for themselves. */
+  named: boolean
 }
 
 export function getContributor(): Contributor | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    return JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    if (!parsed?.name || !parsed?.color) return null
+    // Contributors saved before the name prompt became optional had to type a
+    // name to get in, so treat them as already named.
+    return { name: parsed.name, color: parsed.color, named: parsed.named ?? true }
   } catch {
     return null
   }
@@ -30,6 +38,20 @@ export function getContributor(): Contributor | null {
 
 export function saveContributor(contributor: Contributor) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(contributor))
+}
+
+/**
+ * Always returns someone to annotate as. Nobody is ever blocked on naming
+ * themselves — an unnamed visitor gets a stable Guest identity and a color, and
+ * can put a real name to it later.
+ */
+export function ensureContributor(): Contributor {
+  const existing = getContributor()
+  if (existing) return existing
+
+  const guest: Contributor = { name: GUEST_NAME, color: getRandomColor(), named: false }
+  saveContributor(guest)
+  return guest
 }
 
 export function getRandomColor(): string {

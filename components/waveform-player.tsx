@@ -77,6 +77,10 @@ export function WaveformPlayer({
     const dpr = window.devicePixelRatio || 1
     const rect = canvas.getBoundingClientRect()
 
+    // On first paint the canvas can still be zero-width. Bail rather than
+    // computing negative bar geometry; the ResizeObserver redraws once laid out.
+    if (rect.width <= 0 || rect.height <= 0) return
+
     canvas.width = rect.width * dpr
     canvas.height = rect.height * dpr
     ctx.scale(dpr, dpr)
@@ -99,8 +103,10 @@ export function WaveformPlayer({
         ? "oklch(0.50 0.13 45)"
         : "oklch(0.68 0.18 45)"
 
-      const w = barWidth - gap
-      const radius = Math.min(w / 2, 1.5)
+      // A narrow canvas can make the gap wider than the bar itself; roundRect
+      // throws on a negative radius.
+      const w = Math.max(0, barWidth - gap)
+      const radius = Math.max(0, Math.min(w / 2, 1.5))
       ctx.beginPath()
       ctx.roundRect(x, y, w, h, radius)
       ctx.fill()

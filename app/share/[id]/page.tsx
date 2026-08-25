@@ -8,12 +8,14 @@ import { PlaybackControls } from "@/components/playback-controls"
 import { SharedNotesList } from "@/components/shared-notes-list"
 import { MacroBar } from "@/components/macro-bar"
 import { ContributorPrompt } from "@/components/contributor-prompt"
+import { ShareCta } from "@/components/share-cta"
 import { Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import type { MacroType } from "@/lib/types"
-import { getContributor, saveContributor } from "@/lib/contributor"
+import { ensureContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
+import { ev } from "@/lib/analytics"
 import * as db from "@/lib/db"
 import type { AnnotationRow, ProjectRow } from "@/lib/db"
 
@@ -33,7 +35,8 @@ export default function SharePage() {
   const [macroFeedback, setMacroFeedback] = useState<{ timestamp: number; type: MacroType } | null>(null)
 
   const [contributor, setContributor] = useState<Contributor | null>(null)
-  const [showContributorPrompt, setShowContributorPrompt] = useState(false)
+  const [showNamePrompt, setShowNamePrompt] = useState(false)
+  const hasAskedForName = useRef(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -60,18 +63,31 @@ export default function SharePage() {
     load()
   }, [projectId])
 
-  // Load contributor
+  // Nobody is gated on naming themselves — a visitor gets a Guest identity and
+  // starts listening immediately. The name is asked for after the first note.
   useEffect(() => {
-    const saved = getContributor()
-    if (saved) setContributor(saved)
-    else setShowContributorPrompt(true)
+    setContributor(ensureContributor())
   }, [])
+
+  useEffect(() => {
+    ev("share_link_opened", { projectId })
+  }, [projectId])
 
   const handleContributorSubmit = (c: Contributor) => {
     setContributor(c)
     saveContributor(c)
-    setShowContributorPrompt(false)
+    setShowNamePrompt(false)
   }
+
+  /** Ask for a name once, after they've actually left something. */
+  const maybeAskForName = useCallback(() => {
+    if (hasAskedForName.current) return
+    hasAskedForName.current = true
+    setContributor((current) => {
+      if (current && !current.named) setShowNamePrompt(true)
+      return current
+    })
+  }, [])
 
   // Decode audio for waveform
   const decodeAudioFromUrl = useCallback(async (url: string) => {
@@ -120,7 +136,7 @@ export default function SharePage() {
       audio.removeEventListener("pause", handlePause)
       audio.removeEventListener("error", handleError)
     }
-  }, [project?.audio_url, showContributorPrompt])
+  }, [project?.audio_url])
 
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
@@ -159,20 +175,22 @@ export default function SharePage() {
   }))
 
   const handleAddNote = async (timestamp: number) => {
-    if (!contributor) return
+    const who = contributor ?? ensureContributor()
 
     try {
       const row = await db.addAnnotation(
-        projectId, timestamp, "", contributor.name, contributor.color
+        projectId, timestamp, "", who.name, who.color
       )
       setAnnotations((prev) => [...prev, row].sort((a, b) => a.timestamp - b.timestamp))
+      ev("annotation_added", { projectId, surface: "share", type: "none" })
+      maybeAskForName()
     } catch (err) {
       console.error("Failed to add annotation:", err)
     }
   }
 
   const handleMacroTrigger = async (type: MacroType, timestamp: number) => {
-    if (!contributor) return
+    const who = contributor ?? ensureContributor()
 
     const macroLabels: Record<MacroType, string> = {
       highlight: "🔥",
@@ -187,12 +205,15 @@ export default function SharePage() {
     try {
       const row = await db.addAnnotation(
         projectId, timestamp, macroLabels[type],
-        contributor.name, contributor.color, type
+        who.name, who.color, type
       )
       setAnnotations((prev) => [...prev, row].sort((a, b) => a.timestamp - b.timestamp))
 
       setMacroFeedback({ timestamp, type })
       setTimeout(() => setMacroFeedback(null), 1000)
+
+      ev("annotation_added", { projectId, surface: "share", type })
+      maybeAskForName()
     } catch (err) {
       console.error("Failed to add annotation:", err)
     }
@@ -244,13 +265,10 @@ export default function SharePage() {
     )
   }
 
-  // Contributor prompt
-  if (showContributorPrompt) {
-    return <ContributorPrompt onSubmit={handleContributorSubmit} />
-  }
-
   return (
-    <div className="flex min-h-dvh flex-col bg-background pb-24 sm:pb-32">
+    /* Chrome stays pinned and only the notes pane scrolls — seeking the
+       waveform shouldn't require scrolling back up to find it. */
+    <div className="flex h-dvh flex-col overflow-hidden bg-background pb-24 sm:pb-32">
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="flex h-14 items-center justify-between px-3 sm:px-4">
@@ -272,7 +290,7 @@ export default function SharePage() {
               </span>
             </div>
 
-            {contributor && (
+            {contributor?.named && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: contributor.color }} />
                 {contributor.name}
@@ -282,7 +300,7 @@ export default function SharePage() {
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col min-h-0">
         <div className="border-b border-border/50 bg-card/30">
           <WaveformPlayer
             currentTime={currentTime}
@@ -305,7 +323,9 @@ export default function SharePage() {
           />
         </div>
 
-        <div className="flex-1 overflow-auto">
+        {/* The CTA lives inside the scroll area so it lands at the end of the
+            notes rather than adding a second scrollbar to the page. */}
+        <div className="flex-1 min-h-0 overflow-auto">
           <SharedNotesList
             annotations={annotations}
             currentTime={currentTime}
@@ -314,10 +334,19 @@ export default function SharePage() {
             onUpdateAnnotation={handleUpdateAnnotation}
             onDeleteAnnotation={handleDeleteAnnotation}
           />
+          <ShareCta />
         </div>
       </main>
 
       <MacroBar currentTime={currentTime} isPlaying={isPlaying} onMacroTrigger={handleMacroTrigger} />
+
+      {showNamePrompt && contributor && (
+        <ContributorPrompt
+          contributor={contributor}
+          onSubmit={handleContributorSubmit}
+          onSkip={() => setShowNamePrompt(false)}
+        />
+      )}
 
       <audio ref={audioRef} src={project.audio_url} />
     </div>

@@ -28,7 +28,9 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav files, annotate the
 - `lib/types.ts` — Shared types (Note, MacroType)
 - `lib/db.ts` — Supabase CRUD operations (projects, annotations)
 - `lib/supabase.ts` — Supabase client (lazy-initialized, safe at build time)
-- `lib/contributor.ts` — Contributor identity (name + color, localStorage)
+- `lib/contributor.ts` — Contributor identity (name + color, localStorage). `ensureContributor()` always returns someone — unnamed visitors get a Guest identity so nobody is ever gated on a name form.
+- `lib/my-projects.ts` — Creator's own shared projects (localStorage). Without accounts this is the only route back to a track's feedback.
+- `lib/analytics.ts` — `ev()` wrapper over Vercel Analytics `track()`. Events map the share loop: `upload_started` → `share_clicked` → `share_created` → `share_link_opened` → `annotation_added`.
 - `lib/utils.ts` — cn() utility
 - `hooks/use-keyboard-controls.ts` — Spacebar play/pause, arrow key skip
 - `public/` — Logo assets + oncue-og.png (OG image)
@@ -39,14 +41,23 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav files, annotate the
 - **Storage bucket:** `audio` (public, for uploaded audio files)
 - Schema defined in `supabase-schema.sql`
 
-## Macros (7 total, text-only — no voice recording)
-highlight, issue, note, too-loud, too-quiet, adjust-levels, idea
+## Macros (3 offered, text-only — no voice recording)
+The bar offers **note, highlight (Fire), idea**. Trimmed from seven in Aug 2026:
+across 538 production annotations these three were 99.6% of all use, while
+too-loud and too-quiet had never been pressed once.
+
+`MacroType` still carries the retired values (`issue`, `too-loud`, `too-quiet`,
+`adjust-levels`) so existing annotations keep rendering — don't remove them from
+the type or from `macroLabels`.
 
 ## Features
 - Real waveform rendering from audio data (Web Audio API decodeAudioData)
 - Spacebar play/pause, arrow key skip (±5s)
 - Drag-and-drop file upload with 25MB size limit + file type validation
-- Contributor identity (name + color picker, persisted in localStorage)
+- Contributor identity is optional — visitors annotate as Guest and are asked to name themselves only *after* their first note (skippable)
+- Share page ends in a "Got a track of your own?" CTA — every recipient is a potential uploader
+- Share links carry per-project OG meta ("<name> wants feedback on <track>"), generated server-side in `app/share/[id]/layout.tsx`
+- Creators see "Your shared tracks" on the upload screen
 - Share button uploads audio to Supabase, copies share link
 - OG image (oncue-og.png) + social meta tags for rich link previews (summary_large_image)
 - Mobile-optimized: responsive waveform, touch-to-seek, bottom-docked macro bar, iOS safe areas
@@ -54,7 +65,7 @@ highlight, issue, note, too-loud, too-quiet, adjust-levels, idea
 ## Limits
 - **File size:** 25MB max per upload (validated client-side with clear error message)
 - **File types:** .mp3 and .wav only
-- **No auth yet** — contributor identity is name + color via localStorage
+- **No auth yet** — contributor identity is name + color via localStorage, and naming is optional
 - **No per-user upload limits yet** — planned for post-MVP (track via upload_logs table)
 
 ## Build & Run
@@ -74,7 +85,7 @@ NEXT_PUBLIC_SITE_URL=https://oncue.audio  # optional, defaults to oncue.audio
 ## Design Principles
 - Audio-native — should feel like a DAW, not a generic web app
 - Speed over features — musicians mid-session won't wait
-- Opinionated defaults — lean into the macro bar, don't over-configure
+- Opinionated defaults — lean into the macro bar, but keep it small; usage data killed four of the original seven macros
 - Dark-first — studio tool aesthetic
 - Text-only annotations for v1 — no voice recording to keep storage lean
-- Every shared link is a new user — the share flow is the growth engine
+- Every shared link is a new user — the share flow is the growth engine, so nothing may block a recipient before they hear audio

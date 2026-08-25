@@ -31,7 +31,12 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
   if (notes.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
-        <p className="text-sm text-muted-foreground/60">No annotations</p>
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground/60">No notes yet</p>
+          <p className="text-xs text-muted-foreground/40">
+            Play the track and tap Note to leave one at that moment.
+          </p>
+        </div>
       </div>
     )
   }
