@@ -30,7 +30,9 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav files, annotate the
 - `lib/supabase.ts` — Supabase client (lazy-initialized, safe at build time)
 - `lib/contributor.ts` — Contributor identity (name + color, localStorage). `ensureContributor()` always returns someone — unnamed visitors get a Guest identity so nobody is ever gated on a name form.
 - `lib/my-projects.ts` — Creator's own shared projects (localStorage). Without accounts this is the only route back to a track's feedback.
-- `lib/analytics.ts` — `ev()` wrapper over Vercel Analytics `track()`. Events map the share loop: `upload_started` → `share_clicked` → `share_created` → `share_link_opened` → `annotation_added`.
+- `lib/analytics.ts` — `ev()` wrapper over Vercel Analytics `track()`. Events map the share loop: `upload_started` → `share_clicked` → `share_created` → `share_link_opened` → `annotation_added`. The recruit branch off `share_link_opened` is `share_cta_clicked` → `upload_started` with `referral: "share"`.
+- `lib/referral.ts` — carries "came from a share link" across the hop to `/annotate` (sessionStorage + `?ref=share`). Analytics props only; never written to the database.
+- `lib/site.ts` — the canonical origin (`www.oncue.audio`) used by metadata, `app/sitemap.ts` and `app/robots.ts`. Share pages are `noindex`.
 - `lib/utils.ts` — cn() utility
 - `hooks/use-keyboard-controls.ts` — Spacebar play/pause, arrow key skip
 - `public/` — Logo assets + oncue-og.png (OG image)
@@ -79,7 +81,7 @@ npx pnpm build
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
-NEXT_PUBLIC_SITE_URL=https://oncue.audio  # optional, defaults to oncue.audio
+NEXT_PUBLIC_SITE_URL=https://www.oncue.audio  # optional, defaults to www (the host Vercel serves; apex 307s to it)
 ```
 
 ## Design Principles

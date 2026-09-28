@@ -2,13 +2,20 @@
 
 import Link from "next/link"
 import { Upload } from "lucide-react"
+import { ev } from "@/lib/analytics"
+import { markReferredFromShare } from "@/lib/referral"
 
 /**
  * The end of the share page used to be a dead end — the only way out was the
  * logo. This is the loop: everyone who receives a link is someone who works
  * with audio and now knows what the tool does.
  */
-export function ShareCta() {
+export function ShareCta({ projectId, annotated }: { projectId: string; annotated: boolean }) {
+  const handleClick = () => {
+    ev("share_cta_clicked", { projectId, annotated })
+    markReferredFromShare(projectId)
+  }
+
   return (
     <div className="border-t border-border/50 bg-card/30 px-4 py-10 sm:py-12">
       <div className="mx-auto max-w-md text-center space-y-4">
@@ -22,12 +29,23 @@ export function ShareCta() {
           </p>
         </div>
         <Link
-          href="/annotate"
+          href="/annotate?ref=share"
+          onClick={handleClick}
           className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent px-5 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Upload className="h-4 w-4" />
           Start annotating
         </Link>
+        <p className="text-xs text-muted-foreground/60 pt-2">
+          <a
+            href="https://www.elulabs.com/#contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-accent transition-colors"
+          >
+            Built by ELU LABS
+          </a>
+        </p>
       </div>
     </div>
   )

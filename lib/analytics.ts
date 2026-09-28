@@ -8,8 +8,16 @@ import { track } from "@vercel/analytics"
  *                                            ▼
  *                                    share_link_opened
  *                                            │
- *                                            ▼
- *                                   annotation_added (first: true)
+ *                                            ├──▶ annotation_added (first: true)
+ *                                            │
+ *                                            └──▶ share_cta_clicked
+ *                                                       │
+ *                                                       ▼
+ *                                        upload_started (referral: "share")
+ *
+ * The second branch is recruitment: a recipient who liked the tool enough to
+ * bring their own track. It is the only channel that compounds, so it is
+ * measured end to end rather than inferred from a traffic spike.
  *
  * `share_link_opened` is the one that can't be reconstructed after the fact —
  * annotations only record people who acted, so a link that was opened and
@@ -20,6 +28,7 @@ export type OnCueEvent =
   | "share_clicked"
   | "share_created"
   | "share_link_opened"
+  | "share_cta_clicked"
   | "annotation_added"
 
 type Props = Record<string, string | number | boolean | null>

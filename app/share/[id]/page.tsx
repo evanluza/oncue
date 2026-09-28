@@ -25,6 +25,9 @@ export default function SharePage() {
 
   const [project, setProject] = useState<ProjectRow | null>(null)
   const [annotations, setAnnotations] = useState<AnnotationRow[]>([])
+  // Whether this visitor left a note on this visit — the CTA reports it so the
+  // two kinds of recruit (listened only vs. actually annotated) stay separable.
+  const [hasAnnotatedHere, setHasAnnotatedHere] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -183,6 +186,7 @@ export default function SharePage() {
       )
       setAnnotations((prev) => [...prev, row].sort((a, b) => a.timestamp - b.timestamp))
       ev("annotation_added", { projectId, surface: "share", type: "none" })
+      setHasAnnotatedHere(true)
       maybeAskForName()
     } catch (err) {
       console.error("Failed to add annotation:", err)
@@ -213,6 +217,7 @@ export default function SharePage() {
       setTimeout(() => setMacroFeedback(null), 1000)
 
       ev("annotation_added", { projectId, surface: "share", type })
+      setHasAnnotatedHere(true)
       maybeAskForName()
     } catch (err) {
       console.error("Failed to add annotation:", err)
@@ -334,7 +339,7 @@ export default function SharePage() {
             onUpdateAnnotation={handleUpdateAnnotation}
             onDeleteAnnotation={handleDeleteAnnotation}
           />
-          <ShareCta />
+          <ShareCta projectId={projectId} annotated={hasAnnotatedHere} />
         </div>
       </main>
 

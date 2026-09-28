@@ -18,6 +18,7 @@ import { ensureContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
 import { addMyProject } from "@/lib/my-projects"
 import { ev } from "@/lib/analytics"
+import { readReferral } from "@/lib/referral"
 import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import * as db from "@/lib/db"
 
@@ -123,6 +124,20 @@ export default function AnnotatePage() {
     }
   }, [])
 
+  // Read once on mount: were they sent here from someone else's share link?
+  // Recorded as a prop on the funnel events rather than in the database — it
+  // answers "does the loop recruit?", not "who is this person?".
+  const referral = useRef<string>("direct")
+  const referredFrom = useRef<string | null>(null)
+  useEffect(() => {
+    const found = readReferral(window.location.search)
+    if (!found) return
+    referral.current = "share"
+    if (found.fromProjectId) referredFrom.current = found.fromProjectId
+    // Keep the address bar (and any copy/paste of it) clean.
+    window.history.replaceState(null, "", "/annotate")
+  }, [])
+
   const loadFile = useCallback((file: File) => {
     setUploadError(null)
 
@@ -136,7 +151,11 @@ export default function AnnotatePage() {
       return
     }
 
-    ev("upload_started", { sizeMb: Math.round((file.size / (1024 * 1024)) * 10) / 10 })
+    ev("upload_started", {
+      sizeMb: Math.round((file.size / (1024 * 1024)) * 10) / 10,
+      referral: referral.current,
+      referredFrom: referredFrom.current,
+    })
 
     const url = URL.createObjectURL(file)
     setAudioFile(url)
@@ -214,7 +233,11 @@ export default function AnnotatePage() {
       await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      ev("share_created", { projectId: project.id, noteCount: notes.length })
+      ev("share_created", {
+        projectId: project.id,
+        noteCount: notes.length,
+        referral: referral.current,
+      })
     } catch (err) {
       console.error("Share failed:", err)
     } finally {
