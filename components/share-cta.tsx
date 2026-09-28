@@ -25,7 +25,7 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">Got a track of your own?</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Drop in an mp3 or wav, mark it up, and send the link. No sign-up.
+            Drop in an mp3, wav or m4a, mark it up, and send the link. No sign-up.
           </p>
         </div>
         <Link

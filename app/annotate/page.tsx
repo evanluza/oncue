@@ -24,8 +24,35 @@ import * as db from "@/lib/db"
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
 
+/**
+ * Voice Memos on iPhone records .m4a, which is how most speaking practice,
+ * lesson recordings and phone-captured audio arrive. Rejecting it turned away
+ * the exact uploads the tool is best at, silently.
+ *
+ * Extension is checked alongside MIME type because browsers disagree about
+ * m4a: Chrome reports audio/mp4, Safari audio/x-m4a, and a file dragged from
+ * some sources arrives with an empty type.
+ */
+const ACCEPTED_TYPES = new Set([
+  "audio/wav",
+  "audio/x-wav",
+  "audio/wave",
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/m4a",
+  "audio/aac",
+])
+const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".m4a", ".aac", ".mp4"]
+
+function fileExtension(name: string) {
+  const i = name.lastIndexOf(".")
+  return i === -1 ? "" : name.slice(i).toLowerCase()
+}
+
 function isAudioFile(file: File) {
-  return file.type === "audio/wav" || file.type === "audio/mpeg"
+  return ACCEPTED_TYPES.has(file.type) || ACCEPTED_EXTENSIONS.includes(fileExtension(file.name))
 }
 
 function formatFileSize(bytes: number) {
@@ -142,11 +169,15 @@ export default function AnnotatePage() {
     setUploadError(null)
 
     if (!isAudioFile(file)) {
-      setUploadError("Only .mp3 and .wav files are supported.")
+      // Rejections were invisible before this: a blocked upload left no trace
+      // anywhere, so a format everyone records in could fail for months.
+      ev("upload_rejected", { reason: "format", ext: fileExtension(file.name) || "none", mime: file.type || "none" })
+      setUploadError("That file type isn't supported. Try .mp3, .wav or .m4a.")
       return
     }
 
     if (file.size > MAX_FILE_SIZE) {
+      ev("upload_rejected", { reason: "size", sizeMb: Math.round((file.size / (1024 * 1024)) * 10) / 10 })
       setUploadError(`File is ${formatFileSize(file.size)}. Max size is 25MB — try a compressed .mp3.`)
       return
     }
@@ -418,7 +449,7 @@ export default function AnnotatePage() {
                 {isDragging ? "Drop it here" : "Upload an audio file"}
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Drag and drop a .wav or .mp3, or click below to browse.
+                Drag and drop a .mp3, .wav or .m4a, or click below to browse.
               </p>
               <p className="text-[11px] text-muted-foreground/50">Max file size: 25MB</p>
             </div>
@@ -437,7 +468,7 @@ export default function AnnotatePage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".wav,.mp3,audio/wav,audio/mpeg"
+              accept=".wav,.mp3,.m4a,.aac,.mp4,audio/wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac"
               onChange={handleFileUpload}
               className="hidden"
             />
@@ -509,7 +540,7 @@ export default function AnnotatePage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".wav,.mp3,audio/wav,audio/mpeg"
+              accept=".wav,.mp3,.m4a,.aac,.mp4,audio/wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/aac"
               onChange={handleFileUpload}
               className="hidden"
             />

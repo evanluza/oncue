@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: "OnCue — Timestamped Audio Feedback & Annotation",
     template: "%s | OnCue",
   },
-  description: "Leave timestamped notes on any MP3 or WAV and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
+  description: "Leave timestamped notes on any MP3, WAV or M4A and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
   metadataBase: new URL(SITE_URL),
   applicationName: "OnCue",
   category: "music",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "OnCue — Timestamped Audio Feedback & Annotation",
-    description: "Leave timestamped notes on any MP3 or WAV and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
+    description: "Leave timestamped notes on any MP3, WAV or M4A and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
     siteName: "OnCue",
     type: "website",
     url: "/",

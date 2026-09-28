@@ -25,6 +25,7 @@ import { track } from "@vercel/analytics"
  */
 export type OnCueEvent =
   | "upload_started"
+  | "upload_rejected"
   | "share_clicked"
   | "share_created"
   | "share_link_opened"

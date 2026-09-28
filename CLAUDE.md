@@ -3,7 +3,7 @@
 **Domain:** oncue.audio
 
 ## Project Overview
-OnCue is an audio annotation web app. Users upload .mp3/.wav files, annotate them with timestamped text notes and quick macros, then share a link for collaborators to view and add their own notes.
+OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotate them with timestamped text notes and quick macros, then share a link for collaborators to view and add their own notes.
 
 **Target users:** Musicians collaborating on tracks, music teachers/students, podcasters/editors.
 
@@ -66,7 +66,7 @@ the type or from `macroLabels`.
 
 ## Limits
 - **File size:** 25MB max per upload (validated client-side with clear error message)
-- **File types:** .mp3 and .wav only
+- **File types:** .mp3, .wav, .m4a/.aac (MIME or extension match — browsers disagree on m4a). Rejections fire `upload_rejected`.
 - **No auth yet** — contributor identity is name + color via localStorage, and naming is optional
 - **No per-user upload limits yet** — planned for post-MVP (track via upload_logs table)
 

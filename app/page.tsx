@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: "Which audio formats are supported?",
-    a: "MP3 and WAV files up to 25MB.",
+    a: "MP3, WAV and M4A (iPhone Voice Memos) files up to 25MB.",
   },
   {
     q: "How do I get feedback on a mix or demo?",
@@ -39,7 +39,7 @@ const jsonLd = {
       name: "OnCue",
       url: `${SITE_URL}/`,
       description:
-        "Timestamped audio annotation and feedback. Upload an MP3 or WAV, leave notes at exact moments, and share a link for collaborators to reply.",
+        "Timestamped audio annotation and feedback. Upload an MP3, WAV or M4A, leave notes at exact moments, and share a link for collaborators to reply.",
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Any (web browser)",
       browserRequirements: "Requires JavaScript and a modern browser",
