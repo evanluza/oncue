@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Upload } from "lucide-react"
 import { ev } from "@/lib/analytics"
 import { markReferredFromShare } from "@/lib/referral"
+import { FeedbackButton } from "@/components/feedback-button"
 
 /**
  * The end of the share page used to be a dead end — the only way out was the
@@ -25,7 +26,7 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold text-foreground">Got a track of your own?</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Drop in an mp3, wav or m4a, mark it up, and send the link. No sign-up.
+            Drop in an mp3, wav or m4a, mark the exact moments, and send one link back. No sign-up.
           </p>
         </div>
         <Link
@@ -36,7 +37,9 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
           <Upload className="h-4 w-4" />
           Start annotating
         </Link>
-        <p className="text-xs text-muted-foreground/60 pt-2">
+        <div className="flex items-center justify-center gap-3 pt-2 text-xs text-muted-foreground/60">
+          <FeedbackButton />
+          <span aria-hidden>·</span>
           <a
             href="https://www.elulabs.com/#contact"
             target="_blank"
@@ -45,7 +48,7 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
           >
             Built by ELU LABS
           </a>
-        </p>
+        </div>
       </div>
     </div>
   )

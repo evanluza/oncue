@@ -19,10 +19,28 @@ import type { Contributor } from "@/lib/contributor"
 import { addMyProject } from "@/lib/my-projects"
 import { ev } from "@/lib/analytics"
 import { readReferral } from "@/lib/referral"
+import { daysSince, getCreator, touchVisit, updateCreator } from "@/lib/identity"
+import { PostSharePrompts } from "@/components/post-share-prompts"
+import { FeedbackButton } from "@/components/feedback-button"
 import { useKeyboardControls } from "@/hooks/use-keyboard-controls"
 import * as db from "@/lib/db"
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
+
+/**
+ * Clipboard writes are denied more often than you'd think — Safari outside a
+ * tight user gesture, embedded webviews, locked-down permissions. This used to
+ * throw straight out of the share handler, which skipped the analytics event
+ * and left the creator with no link at all. Failure is now just a false.
+ */
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
 
 /**
  * Voice Memos on iPhone records .m4a, which is how most speaking practice,
@@ -82,6 +100,8 @@ export default function AnnotatePage() {
   const [isSharing, setIsSharing] = useState(false)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  /** Clipboard denied — the link has to be visible or the track is lost. */
+  const [copyFailed, setCopyFailed] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -144,6 +164,28 @@ export default function AnnotatePage() {
       const buffer = await audioContext.decodeAudioData(arrayBuffer)
       setAudioBuffer(buffer)
       audioContext.close()
+
+      // The upload is only real once the audio actually decoded: upload_started
+      // counts attempts, this counts tracks that made it into the workspace.
+      const before = getCreator()
+      const isRepeat = before.uploadCount > 0
+      ev("track_uploaded", {
+        durationSec: Math.round(buffer.duration),
+        referral: referral.current,
+        useCase: before.useCase,
+        uploadIndex: before.uploadCount + 1,
+        creatorId: before.id,
+      })
+      if (isRepeat) {
+        ev("repeat_upload", {
+          daysSincePreviousUpload: daysSince(before.lastUploadAt),
+          previousTrackId: before.lastProjectId,
+          useCase: before.useCase,
+          uploadIndex: before.uploadCount + 1,
+          creatorId: before.id,
+        })
+      }
+      updateCreator({ uploadCount: before.uploadCount + 1, lastUploadAt: new Date().toISOString() })
     } catch (err) {
       console.error("Failed to decode audio:", err)
     } finally {
@@ -156,6 +198,19 @@ export default function AnnotatePage() {
   // answers "does the loop recruit?", not "who is this person?".
   const referral = useRef<string>("direct")
   const referredFrom = useRef<string | null>(null)
+  // A returning creator: someone who has uploaded before and is arriving after
+  // a gap, not clicking around in one sitting.
+  useEffect(() => {
+    const { returning, creator } = touchVisit()
+    if (!returning) return
+    ev("creator_returned", {
+      daysSinceLastUpload: daysSince(creator.lastUploadAt),
+      uploadsSoFar: creator.uploadCount,
+      useCase: creator.useCase,
+      creatorId: creator.id,
+    })
+  }, [])
+
   useEffect(() => {
     const found = readReferral(window.location.search)
     if (!found) return
@@ -164,6 +219,9 @@ export default function AnnotatePage() {
     // Keep the address bar (and any copy/paste of it) clean.
     window.history.replaceState(null, "", "/annotate")
   }, [])
+
+  /** Reset per loaded track by loadFile, so each track reports its own first note. */
+  const firstNoteFired = useRef(false)
 
   const loadFile = useCallback((file: File) => {
     setUploadError(null)
@@ -198,6 +256,7 @@ export default function AnnotatePage() {
     setAudioBuffer(null)
     setProjectId(null)
     setShareUrl(null)
+    firstNoteFired.current = false
     decodeAudio(file)
   }, [decodeAudio])
 
@@ -227,9 +286,12 @@ export default function AnnotatePage() {
     const who = contributor ?? ensureContributor()
 
     if (shareUrl) {
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      const ok = await copyToClipboard(shareUrl)
+      setCopyFailed(!ok)
+      if (ok) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
       return
     }
 
@@ -261,13 +323,23 @@ export default function AnnotatePage() {
 
       const url = `${window.location.origin}/share/${project.id}`
       setShareUrl(url)
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      ev("share_created", {
+
+      const copiedOk = await copyToClipboard(url)
+      setCopyFailed(!copiedOk)
+      if (copiedOk) {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
+
+      const creator = updateCreator({ lastProjectId: project.id })
+      ev("track_shared", {
         projectId: project.id,
         noteCount: notes.length,
         referral: referral.current,
+        useCase: creator.useCase,
+        uploadIndex: creator.uploadCount,
+        creatorId: creator.id,
+        clipboard: copiedOk,
       })
     } catch (err) {
       console.error("Share failed:", err)
@@ -305,6 +377,19 @@ export default function AnnotatePage() {
   // Keyboard: spacebar, arrow keys
   useKeyboardControls({ onPlayPause: handlePlayPause, onSkip: handleSkip })
 
+  const noteFirstAnnotation = (type: string) => {
+    if (firstNoteFired.current) return
+    firstNoteFired.current = true
+    const creator = getCreator()
+    ev("first_annotation_created", {
+      surface: "annotate",
+      type,
+      useCase: creator.useCase,
+      uploadIndex: creator.uploadCount,
+      creatorId: creator.id,
+    })
+  }
+
   const handleAddNote = async (timestamp: number) => {
     const newNote: Note = {
       id: Date.now().toString(),
@@ -313,6 +398,7 @@ export default function AnnotatePage() {
       createdAt: new Date(),
     }
     setNotes((prev) => [...prev, newNote].sort((a, b) => a.timestamp - b.timestamp))
+    noteFirstAnnotation("none")
     ev("annotation_added", { surface: "annotate", type: "none" })
     maybeAskForName()
 
@@ -355,6 +441,7 @@ export default function AnnotatePage() {
     setMacroFeedback({ timestamp, type })
     setTimeout(() => setMacroFeedback(null), 1000)
 
+    noteFirstAnnotation(type)
     ev("annotation_added", { surface: "annotate", type })
     maybeAskForName()
 
@@ -474,6 +561,8 @@ export default function AnnotatePage() {
             />
 
             <MyTracks />
+
+            <FeedbackButton className="pt-2" />
           </div>
         </div>
 
@@ -580,6 +669,25 @@ export default function AnnotatePage() {
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
           />
+          {shareUrl && copyFailed && (
+            <div className="border-t border-border/50 bg-card/40 px-4 py-4">
+              <div className="mx-auto w-full max-w-md space-y-1.5">
+                <p className="text-xs text-muted-foreground">
+                  Your browser blocked the copy — here&apos;s the link:
+                </p>
+                <input
+                  readOnly
+                  value={shareUrl}
+                  onFocus={(e) => e.currentTarget.select()}
+                  aria-label="Share link"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Only after a link exists, and never in the way of it. */}
+          {projectId && shareUrl && <PostSharePrompts projectId={projectId} />}
         </div>
       </main>
 

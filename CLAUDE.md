@@ -5,9 +5,9 @@
 ## Project Overview
 OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotate them with timestamped text notes and quick macros, then share a link for collaborators to view and add their own notes.
 
-**Target users:** Musicians collaborating on tracks, music teachers/students, podcasters/editors.
+**Target users:** Anyone giving feedback on a recording — language/pronunciation tutors, music teachers, producers, podcasters.
 
-**Collaboration model:** Async — one person uploads and shares, others view + comment. Not real-time. No account needed to comment.
+**Positioning (Sep 2026):** one-way feedback, not collaboration. Production data showed 53 of 61 tracks had notes from the uploader only, and not one recipient ever became a creator — so the site sells "mark up a recording and send one link", while recipients keep the ability to reply. Don't re-introduce collaboration-first copy.
 
 ## Tech Stack
 - **Framework:** Next.js 16 (App Router) + React 19 + TypeScript
@@ -19,6 +19,7 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 
 ## Routes
 - `/` — Landing page (server component, static)
+- `/for/language-teachers`, `/for/pronunciation-feedback`, `/for/music-teachers`, `/for/music-feedback` — hand-written SEO landing pages, linked from the homepage use-case grid and listed in `app/sitemap.ts`
 - `/annotate` — Annotation workspace (client component, static)
 - `/share/[id]` — Shared project view (client component, dynamic, has own OG meta)
 
@@ -30,8 +31,12 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 - `lib/supabase.ts` — Supabase client (lazy-initialized, safe at build time)
 - `lib/contributor.ts` — Contributor identity (name + color, localStorage). `ensureContributor()` always returns someone — unnamed visitors get a Guest identity so nobody is ever gated on a name form.
 - `lib/my-projects.ts` — Creator's own shared projects (localStorage). Without accounts this is the only route back to a track's feedback.
-- `lib/analytics.ts` — `ev()` wrapper over Vercel Analytics `track()`. Events map the share loop: `upload_started` → `share_clicked` → `share_created` → `share_link_opened` → `annotation_added`. The recruit branch off `share_link_opened` is `share_cta_clicked` → `upload_started` with `referral: "share"`.
+- `lib/analytics.ts` — `ev()` wrapper over Vercel Analytics `track()`, with the full event catalogue and the loop diagram. **`ev()` waits for the SDK before sending:** React runs child effects before the root `<Analytics>`, so mount-time events (notably `share_link_opened`) used to be dropped silently. Don't "simplify" that back to a bare `track()` call.
+- `lib/identity.ts` — the anonymous creator record in localStorage (random id, upload count, last upload/visit, use case). Powers `creator_returned` and `repeat_upload`. Not a fingerprint; repeat counts are a floor.
 - `lib/referral.ts` — carries "came from a share link" across the hop to `/annotate` (sessionStorage + `?ref=share`). Analytics props only; never written to the database.
+- `components/landing-shell.tsx` — chrome for the hand-written `/for/*` SEO pages. Four pages only; do not generate more programmatically.
+- `components/post-share-prompts.tsx` — email capture then the use-case question, shown only after a share link exists. Both skippable, asked once per browser.
+- `components/feedback-button.tsx` — "Have feedback?" → textarea + optional email → `product_feedback`.
 - `lib/site.ts` — the canonical origin (`www.oncue.audio`) used by metadata, `app/sitemap.ts` and `app/robots.ts`. Share pages are `noindex`.
 - `lib/utils.ts` — cn() utility
 - `hooks/use-keyboard-controls.ts` — Spacebar play/pause, arrow key skip
@@ -40,6 +45,7 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 ## Database (Supabase)
 - **projects** — id, name, audio_url, created_by, creator_color, created_at
 - **annotations** — id, project_id, timestamp, text, type, contributor_name, contributor_color, created_at
+- **email_captures / use_case_responses / product_feedback** — research tables, **insert-only**: no select policy, because the browser anon key is public and these hold email addresses. Read them in the Supabase dashboard.
 - **Storage bucket:** `audio` (public, for uploaded audio files)
 - Schema defined in `supabase-schema.sql`
 
@@ -79,6 +85,7 @@ npx pnpm build
 
 ## Environment Variables
 ```
+NEXT_PUBLIC_EMAIL_DELIVERY=on   # only once transactional email actually exists; flips the capture copy from "Save my email" to "Send me the link"
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 NEXT_PUBLIC_SITE_URL=https://www.oncue.audio  # optional, defaults to www (the host Vercel serves; apex 307s to it)

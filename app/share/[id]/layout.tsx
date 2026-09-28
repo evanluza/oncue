@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
 
   let title = "OnCue — Listen & Leave Feedback"
-  let description = "Someone shared an audio track for your feedback. Listen, annotate, and collaborate."
+  let description = "Someone left you feedback on a recording. Open the link and hear their notes at the exact moments they apply."
 
   try {
     const project = await db.getProject(id)
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         : project.created_by.trim()
 
       title = `${sender} wants feedback on ${track}`
-      description = "Listen, leave timestamped notes, and send them back. No sign-up needed."
+      description = "Listen, hear their notes at the moments they apply, and reply in the same place if you want to. No sign-up needed."
     }
   } catch {
     // Fall through to the generic card rather than breaking the page.

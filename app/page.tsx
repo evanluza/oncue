@@ -1,33 +1,67 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { Metadata } from "next"
-import { ArrowRight, Upload, MessageSquare, Share2, Music, GraduationCap, Podcast } from "lucide-react"
+import { ArrowRight, Upload, MessageSquare, Share2, Music, GraduationCap, Podcast, Mic } from "lucide-react"
 import { SITE_URL } from "@/lib/site"
+import { FeedbackButton } from "@/components/feedback-button"
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
 }
 
+const USE_CASES = [
+  {
+    icon: <Mic className="h-4 w-4" />,
+    title: "Speaking & pronunciation",
+    description:
+      "Mark pronunciation, pacing, and speaking mistakes at the exact moment they happen.",
+    href: "/for/language-teachers",
+    linkLabel: "For language teachers",
+  },
+  {
+    icon: <Music className="h-4 w-4" />,
+    title: "Music & production",
+    description:
+      "Point out arrangement, mix, performance, and production changes without writing timestamps manually.",
+    href: "/for/music-feedback",
+    linkLabel: "For music feedback",
+  },
+  {
+    icon: <GraduationCap className="h-4 w-4" />,
+    title: "Lessons & coaching",
+    description: "Send students clear audio feedback they can open from one link.",
+    href: "/for/music-teachers",
+    linkLabel: "For music teachers",
+  },
+  {
+    icon: <Podcast className="h-4 w-4" />,
+    title: "Podcast & editing",
+    description: "Flag edits, cuts, mistakes, and moments worth revisiting.",
+    href: "/annotate",
+    linkLabel: "Upload an episode",
+  },
+]
+
 const FAQS = [
   {
     q: "What is OnCue?",
-    a: "OnCue is a free web tool for annotating audio. Upload a track, leave notes pinned to exact timestamps, and share a link so others can listen and reply in context.",
+    a: "OnCue is a free web tool for giving feedback on audio. Upload a recording, leave notes pinned to exact timestamps, and send one link. Whoever opens it hears your notes at the moments they apply — and can reply in the same place if they want to.",
   },
   {
-    q: "Do I need an account?",
-    a: "No. Just upload a track and start annotating. Anyone with your share link can listen and add their own timestamped notes.",
+    q: "Does anyone need an account?",
+    a: "No — not you, and not the person you send it to. You upload and mark it up, they open a link and listen. Nobody signs up, and nothing gets installed.",
   },
   {
     q: "Which audio formats are supported?",
     a: "MP3, WAV and M4A (iPhone Voice Memos) files up to 25MB.",
   },
   {
-    q: "How do I get feedback on a mix or demo?",
-    a: "Upload the file, add any notes you want reviewers to see, then copy the share link and send it to your bandmates, clients, or teacher. Their comments appear on the waveform at the moment they were left.",
+    q: "How do I send someone feedback on a recording?",
+    a: "Upload their file, listen through it, and type a note whenever something needs saying — each note sticks to the second you were at. Then copy the share link and send it. They open it in a browser with nothing to install and no account to make.",
   },
   {
     q: "Are share links private?",
-    a: "Share links are unlisted: they aren't indexed by search engines, but anyone who has the link can open the track, so only send it to people you trust.",
+    a: "Share links are unlisted: they aren't indexed by search engines, but anyone who has the link can open the track, so only send it to people you trust. There is no password on a link yet.",
   },
 ]
 
@@ -39,7 +73,7 @@ const jsonLd = {
       name: "OnCue",
       url: `${SITE_URL}/`,
       description:
-        "Timestamped audio annotation and feedback. Upload an MP3, WAV or M4A, leave notes at exact moments, and share a link for collaborators to reply.",
+        "Timestamped audio feedback. Upload an MP3, WAV or M4A, leave notes at the exact moments they apply, and send one link — no account for you or the person receiving it.",
       applicationCategory: "MultimediaApplication",
       operatingSystem: "Any (web browser)",
       browserRequirements: "Requires JavaScript and a modern browser",
@@ -72,7 +106,7 @@ export default function LandingPage() {
             href="/annotate"
             className="inline-flex items-center gap-2 rounded-lg bg-accent text-accent-foreground px-4 h-9 text-sm font-medium hover:bg-accent/90 transition-colors"
           >
-            Start Annotating
+            Upload audio
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -87,27 +121,27 @@ export default function LandingPage() {
           <div className="max-w-2xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/50 bg-card/50 px-4 py-1.5 text-xs text-muted-foreground">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent" />
-              Audio annotation made simple
+              Timestamped audio feedback
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-[1.1]">
-              Drop a track.
+              Give feedback
               <br />
-              <span className="text-accent">Mark it up.</span>
-              <br />
-              Share the link.
+              <span className="text-accent">right where it matters.</span>
             </h1>
 
             <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto">
-              Leave timestamped notes and quick-fire callouts on any audio file. Then share it with anyone for feedback.
+              Upload audio. Leave notes at exact moments. Share one link.
             </p>
+
+            <p className="text-sm text-muted-foreground/70">No account required.</p>
 
             <div className="flex items-center justify-center gap-3 pt-2">
               <Link
                 href="/annotate"
                 className="inline-flex items-center gap-2 rounded-lg bg-accent text-accent-foreground px-6 h-11 text-sm font-medium hover:bg-accent/90 transition-colors"
               >
-                Start Annotating
+                Upload audio
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -149,7 +183,7 @@ export default function LandingPage() {
                   <span className="text-accent">1:12</span> 🔥
                 </div>
                 <div className="flex items-center gap-1.5 rounded-md bg-secondary/50 px-2.5 py-1 text-[10px] text-muted-foreground">
-                  <span className="text-accent">2:05</span> Levels need work
+                  <span className="text-accent">2:05</span> Say this vowel longer
                 </div>
               </div>
             </div>
@@ -170,19 +204,19 @@ export default function LandingPage() {
                 icon: <Upload className="h-5 w-5" />,
                 step: "01",
                 title: "Upload",
-                description: "Drop in any .mp3 or .wav file. Your audio loads instantly — no account needed.",
+                description: "Drop in an .mp3, .wav or .m4a — including voice memos straight off a phone. It loads instantly, with no account.",
               },
               {
                 icon: <MessageSquare className="h-5 w-5" />,
                 step: "02",
-                title: "Annotate",
-                description: "Add timestamped notes and quick macros as you listen. Flag highlights, issues, and ideas.",
+                title: "Mark the moment",
+                description: "Type a note at the second it applies. No more writing timestamps by hand or saying \"around two minutes in\".",
               },
               {
                 icon: <Share2 className="h-5 w-5" />,
                 step: "03",
-                title: "Share",
-                description: "Send a link. Your collaborators see the waveform, hear the audio, and add their own notes.",
+                title: "Send one link",
+                description: "They open it in a browser, hear your notes land at the right moments, and can reply in the same place if they want to.",
               },
             ].map((item) => (
               <div key={item.step} className="space-y-4">
@@ -203,36 +237,30 @@ export default function LandingPage() {
       {/* Use Cases */}
       <section className="border-t border-border/30">
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <h2 className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-12">
-            Built for
+          <h2 className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">
+            Feedback for anything you can hear
           </h2>
+          <p className="text-center text-sm text-muted-foreground/70 max-w-md mx-auto mb-12">
+            The job is the same everywhere: say what you mean, at the moment you mean it.
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <Music className="h-6 w-6" />,
-                title: "Musicians & Producers",
-                description: "Share rough mixes with bandmates. Mark the verse that needs reworking. Flag the snare that's too hot. All without leaving the track.",
-              },
-              {
-                icon: <GraduationCap className="h-6 w-6" />,
-                title: "Teachers & Students",
-                description: "Leave feedback on student performances. Students can review notes at each timestamp and understand exactly what to practice.",
-              },
-              {
-                icon: <Podcast className="h-6 w-6" />,
-                title: "Podcasters & Editors",
-                description: "Mark edit points, flag audio issues, and leave production notes. Your editor sees everything in context, synced to the timeline.",
-              },
-            ].map((item) => (
-              <div
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {USE_CASES.map((item) => (
+              <Link
                 key={item.title}
-                className="group rounded-xl border border-border/40 bg-card/30 p-6 space-y-4 hover:border-accent/30 hover:bg-card/50 transition-colors"
+                href={item.href}
+                className="group rounded-xl border border-border/40 bg-card/30 p-5 space-y-2.5 hover:border-accent/30 hover:bg-card/50 transition-colors"
               >
-                <div className="text-accent">{item.icon}</div>
-                <h3 className="text-base font-semibold">{item.title}</h3>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-accent">{item.icon}</span>
+                  <h3 className="text-sm font-semibold">{item.title}</h3>
+                </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
-              </div>
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/60 group-hover:text-accent transition-colors">
+                  {item.linkLabel}
+                  <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
             ))}
           </div>
         </div>
@@ -265,13 +293,13 @@ export default function LandingPage() {
             Ready to mark it up?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-            No sign-up required. Upload a track and start annotating in seconds.
+            No sign-up required — not for you, not for whoever you send it to. Upload a recording and leave your first note in seconds.
           </p>
           <Link
             href="/annotate"
             className="inline-flex items-center gap-2 rounded-lg bg-accent text-accent-foreground px-6 h-11 text-sm font-medium hover:bg-accent/90 transition-colors"
           >
-            Start Annotating
+            Upload audio
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -285,7 +313,7 @@ export default function LandingPage() {
             <span className="text-xs text-muted-foreground">oncue</span>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
-            <span className="hidden sm:inline">Audio annotation, simplified.</span>
+            <FeedbackButton />
             <a
               href="https://www.elulabs.com/#contact"
               target="_blank"

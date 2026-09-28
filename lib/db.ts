@@ -128,3 +128,79 @@ export async function deleteAnnotation(id: string): Promise<void> {
 
   if (error) throw new Error(`Delete annotation failed: ${error.message}`)
 }
+
+// ── Research writes ──
+//
+// Everything below is opt-in data the visitor typed on purpose. All three
+// tables are insert-only for the anon key (see supabase-schema.sql), and every
+// call is best-effort: a research write must never break annotating or sharing.
+// If the migration hasn't been run yet these fail quietly and return false.
+
+export type UseCaseAnswer = string
+
+export async function saveEmailCapture(input: {
+  email: string
+  projectId: string | null
+  creatorId: string
+  useCase: UseCaseAnswer | null
+  marketingConsent: boolean
+  source?: string
+}): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from("email_captures").insert({
+      email: input.email.trim(),
+      project_id: input.projectId,
+      creator_id: input.creatorId,
+      use_case: input.useCase,
+      marketing_consent: input.marketingConsent,
+      source: input.source ?? "post_share",
+    })
+    if (error) throw error
+    return true
+  } catch (err) {
+    console.error("Email capture failed:", err)
+    return false
+  }
+}
+
+export async function saveUseCase(input: {
+  creatorId: string
+  useCase: UseCaseAnswer
+  projectId: string | null
+}): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from("use_case_responses").insert({
+      creator_id: input.creatorId,
+      use_case: input.useCase,
+      project_id: input.projectId,
+    })
+    if (error) throw error
+    return true
+  } catch (err) {
+    console.error("Use case save failed:", err)
+    return false
+  }
+}
+
+export async function saveFeedback(input: {
+  message: string
+  email: string | null
+  creatorId: string
+  useCase: UseCaseAnswer | null
+  path: string
+}): Promise<boolean> {
+  try {
+    const { error } = await getSupabase().from("product_feedback").insert({
+      message: input.message.trim(),
+      email: input.email?.trim() || null,
+      creator_id: input.creatorId,
+      use_case: input.useCase,
+      path: input.path,
+    })
+    if (error) throw error
+    return true
+  } catch (err) {
+    console.error("Feedback save failed:", err)
+    return false
+  }
+}

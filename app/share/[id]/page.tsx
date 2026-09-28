@@ -9,6 +9,7 @@ import { SharedNotesList } from "@/components/shared-notes-list"
 import { MacroBar } from "@/components/macro-bar"
 import { ContributorPrompt } from "@/components/contributor-prompt"
 import { ShareCta } from "@/components/share-cta"
+import { FeedbackButton } from "@/components/feedback-button"
 import { Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -16,6 +17,7 @@ import type { MacroType } from "@/lib/types"
 import { ensureContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
 import { ev } from "@/lib/analytics"
+import { getMyProjects } from "@/lib/my-projects"
 import * as db from "@/lib/db"
 import type { AnnotationRow, ProjectRow } from "@/lib/db"
 
@@ -28,6 +30,8 @@ export default function SharePage() {
   // Whether this visitor left a note on this visit — the CTA reports it so the
   // two kinds of recruit (listened only vs. actually annotated) stay separable.
   const [hasAnnotatedHere, setHasAnnotatedHere] = useState(false)
+  /** One play event per visit, not per press of the play button. */
+  const playReported = useRef(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -120,7 +124,17 @@ export default function SharePage() {
     const updateTime = () => setCurrentTime(audio.currentTime)
     const updateDuration = () => setDuration(audio.duration)
     const handleEnded = () => setIsPlaying(false)
-    const handlePlay = () => setIsPlaying(true)
+    const handlePlay = () => {
+      setIsPlaying(true)
+      // Someone opening a link and actually listening is invisible in the
+      // database — nothing is written unless they annotate. This is the only
+      // record that the other end of the loop ever happened.
+      if (!playReported.current) {
+        playReported.current = true
+        const isCreator = getMyProjects().some((p) => p.id === projectId)
+        ev("recipient_played_audio", { projectId, isCreator })
+      }
+    }
     const handlePause = () => setIsPlaying(false)
     const handleError = () => setIsPlaying(false)
 
@@ -139,7 +153,12 @@ export default function SharePage() {
       audio.removeEventListener("pause", handlePause)
       audio.removeEventListener("error", handleError)
     }
-  }, [project?.audio_url])
+    // `loading` belongs in here. The project is set one render before loading
+    // flips false (there's an await between the two), so this effect first runs
+    // while the page is still showing the spinner and <audio> doesn't exist
+    // yet. Without a second run nothing is ever bound: playback works, but the
+    // clock, the duration and the moving playhead stay frozen at 0:00.
+  }, [project?.audio_url, loading])
 
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
@@ -185,6 +204,7 @@ export default function SharePage() {
         projectId, timestamp, "", who.name, who.color
       )
       setAnnotations((prev) => [...prev, row].sort((a, b) => a.timestamp - b.timestamp))
+      if (!hasAnnotatedHere) ev("first_annotation_created", { projectId, surface: "share", type: "none" })
       ev("annotation_added", { projectId, surface: "share", type: "none" })
       setHasAnnotatedHere(true)
       maybeAskForName()
@@ -216,6 +236,7 @@ export default function SharePage() {
       setMacroFeedback({ timestamp, type })
       setTimeout(() => setMacroFeedback(null), 1000)
 
+      if (!hasAnnotatedHere) ev("first_annotation_created", { projectId, surface: "share", type })
       ev("annotation_added", { projectId, surface: "share", type })
       setHasAnnotatedHere(true)
       maybeAskForName()
