@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { ArrowRight, Upload, MessageSquare, Share2, Music, GraduationCap, Podcast, Mic } from "lucide-react"
 import { SITE_URL } from "@/lib/site"
 import { FeedbackButton } from "@/components/feedback-button"
+import { ALL_LANDING_PAGES } from "@/components/landing-shell"
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -307,6 +308,21 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border/30">
+        {/* Every landing page is one click from here. The use-case grid above
+            can't carry all four without a fifth card in a two-column layout,
+            and an orphan page is one nobody — crawler or reader — finds. */}
+        <nav aria-label="Ways people use OnCue" className="max-w-5xl mx-auto px-6 pt-8">
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground/70">
+            {ALL_LANDING_PAGES.map((p) => (
+              <li key={p.href}>
+                <Link href={p.href} className="hover:text-accent transition-colors">
+                  {p.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Image src="/oc-icon-orange.png" alt="OnCue" width={20} height={20} />
