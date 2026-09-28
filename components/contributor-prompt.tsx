@@ -60,7 +60,7 @@ export function ContributorPrompt({ contributor, onSubmit, onSkip }: Contributor
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
             maxLength={30}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
           />
 
           <div className="flex items-center gap-2 flex-wrap">

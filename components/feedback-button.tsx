@@ -107,7 +107,7 @@ export function FeedbackButton({ className = "" }: { className?: string }) {
                   rows={4}
                   maxLength={4000}
                   placeholder="I wish OnCue could..."
-                  className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
 
                 <input
@@ -117,7 +117,7 @@ export function FeedbackButton({ className = "" }: { className?: string }) {
                   placeholder="Email (optional, only if you want a reply)"
                   maxLength={254}
                   aria-label="Your email address, optional"
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                 />
 
                 {failed && (

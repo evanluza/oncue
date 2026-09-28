@@ -170,7 +170,7 @@ export function PostSharePrompts({ projectId }: { projectId: string }) {
                     placeholder="you@example.com"
                     maxLength={254}
                     aria-label="Your email address"
-                    className="flex-1 min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="flex-1 min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                   <Button
                     type="submit"
