@@ -2,23 +2,28 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
+import { SITE_URL } from "@/lib/site"
 
 export const metadata: Metadata = {
   title: {
-    default: "OnCue — Audio Annotation",
+    default: "OnCue — Timestamped Audio Feedback & Annotation",
     template: "%s | OnCue",
   },
-  description: "Drop a track. Mark it up. Share the link. Timestamped audio annotation for musicians, teachers, and creators.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://oncue.audio"),
+  description: "Leave timestamped notes on any MP3 or WAV and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
+  metadataBase: new URL(SITE_URL),
+  applicationName: "OnCue",
+  category: "music",
   icons: {
     icon: "/oc-icon-orange.png",
     apple: "/oc-icon-orange.png",
   },
   openGraph: {
-    title: "OnCue — Audio Annotation",
-    description: "Drop a track. Mark it up. Share the link. Timestamped audio annotation for musicians, teachers, and creators.",
+    title: "OnCue — Timestamped Audio Feedback & Annotation",
+    description: "Leave timestamped notes on any MP3 or WAV and share a link for feedback. Free audio annotation for musicians, producers, teachers, and podcasters. No sign-up.",
     siteName: "OnCue",
     type: "website",
+    url: "/",
+    locale: "en_US",
     images: [
       {
         url: "/oncue-og.png",
@@ -30,7 +35,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OnCue — Audio Annotation",
+    title: "OnCue — Timestamped Audio Feedback & Annotation",
     description: "Drop a track. Mark it up. Share the link.",
     images: ["/oncue-og.png"],
   },

@@ -40,6 +40,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    // Share links are personal feedback threads, not landing pages.
+    robots: { index: false, follow: true },
     openGraph: {
       title,
       description,

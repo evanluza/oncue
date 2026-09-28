@@ -1,10 +1,66 @@
 import Image from "next/image"
 import Link from "next/link"
+import type { Metadata } from "next"
 import { ArrowRight, Upload, MessageSquare, Share2, Music, GraduationCap, Podcast } from "lucide-react"
+import { SITE_URL } from "@/lib/site"
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+}
+
+const FAQS = [
+  {
+    q: "What is OnCue?",
+    a: "OnCue is a free web tool for annotating audio. Upload a track, leave notes pinned to exact timestamps, and share a link so others can listen and reply in context.",
+  },
+  {
+    q: "Do I need an account?",
+    a: "No. Just upload a track and start annotating. Anyone with your share link can listen and add their own timestamped notes.",
+  },
+  {
+    q: "Which audio formats are supported?",
+    a: "MP3 and WAV files up to 25MB.",
+  },
+  {
+    q: "How do I get feedback on a mix or demo?",
+    a: "Upload the file, add any notes you want reviewers to see, then copy the share link and send it to your bandmates, clients, or teacher. Their comments appear on the waveform at the moment they were left.",
+  },
+  {
+    q: "Are share links private?",
+    a: "Share links are unlisted: they aren't indexed by search engines, but anyone who has the link can open the track, so only send it to people you trust.",
+  },
+]
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      name: "OnCue",
+      url: `${SITE_URL}/`,
+      description:
+        "Timestamped audio annotation and feedback. Upload an MP3 or WAV, leave notes at exact moments, and share a link for collaborators to reply.",
+      applicationCategory: "MultimediaApplication",
+      operatingSystem: "Any (web browser)",
+      browserRequirements: "Requires JavaScript and a modern browser",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      image: `${SITE_URL}/oncue-og.png`,
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQS.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
+  ],
+}
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Navigation */}
       <nav className="border-b border-border/30">
         <div className="max-w-5xl mx-auto flex h-16 items-center justify-between px-6">
@@ -182,6 +238,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="border-t border-border/30">
+        <div className="max-w-3xl mx-auto px-6 py-20">
+          <h2 className="text-center text-sm font-medium text-muted-foreground uppercase tracking-widest mb-12">
+            Questions
+          </h2>
+          <div className="divide-y divide-border/30">
+            {FAQS.map((f) => (
+              <details key={f.q} className="group py-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-medium">
+                  <h3>{f.q}</h3>
+                  <span className="text-accent transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="border-t border-border/30">
         <div className="max-w-5xl mx-auto px-6 py-20 text-center">
@@ -208,7 +284,17 @@ export default function LandingPage() {
             <Image src="/oc-icon-orange.png" alt="OnCue" width={20} height={20} />
             <span className="text-xs text-muted-foreground">oncue</span>
           </div>
-          <p className="text-xs text-muted-foreground/50">Audio annotation, simplified.</p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
+            <span className="hidden sm:inline">Audio annotation, simplified.</span>
+            <a
+              href="https://www.elulabs.com/#contact"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-accent transition-colors"
+            >
+              Built by ELU LABS
+            </a>
+          </div>
         </div>
       </footer>
     </div>
