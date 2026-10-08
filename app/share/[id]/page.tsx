@@ -138,6 +138,14 @@ export default function SharePage() {
     const handlePause = () => setIsPlaying(false)
     const handleError = () => setIsPlaying(false)
 
+
+    // Metadata can land before React attaches these listeners (a cached or
+    // local file is ready almost immediately), and then the duration event
+    // never comes. Read whatever the element already knows.
+    if (Number.isFinite(audio.duration) && audio.duration > 0) setDuration(audio.duration)
+    if (audio.currentTime > 0) setCurrentTime(audio.currentTime)
+    if (!audio.paused) setIsPlaying(true)
+
     audio.addEventListener("timeupdate", updateTime)
     audio.addEventListener("loadedmetadata", updateDuration)
     audio.addEventListener("ended", handleEnded)

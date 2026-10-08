@@ -20,6 +20,7 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 ## Routes
 - `/` — Landing page (server component, static)
 - `/for/language-teachers`, `/for/pronunciation-feedback`, `/for/music-teachers`, `/for/music-feedback` — hand-written SEO landing pages, linked from the homepage use-case grid and listed in `app/sitemap.ts`
+- `/demo` — public sample track with feedback already on it. Indexable on purpose (unlike `/share/[id]`), entirely local: static audio in `public/demo-track.m4a`, notes hardcoded, no Supabase, nothing saved. Note timestamps were measured against the rendered audio — if the recording is replaced, re-measure them.
 - `/annotate` — Annotation workspace (client component, static)
 - `/share/[id]` — Shared project view (client component, dynamic, has own OG meta)
 
@@ -68,6 +69,7 @@ the type or from `macroLabels`.
 - Creators see "Your shared tracks" on the upload screen
 - Share button uploads audio to Supabase, copies share link
 - OG image (oncue-og.png) + social meta tags for rich link previews (summary_large_image)
+- Demo page at `/demo` gives every CTA somewhere to send people who have no file to hand
 - Mobile-optimized: responsive waveform, touch-to-seek, bottom-docked macro bar, iOS safe areas
 
 ## Limits
