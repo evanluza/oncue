@@ -15,7 +15,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${SITE_URL}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/annotate`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE_URL}/demo`, changeFrequency: "monthly", priority: 0.9 },
     ...LANDING_PAGES.map((path) => ({
       url: `${SITE_URL}${path}`,
       changeFrequency: "monthly" as const,

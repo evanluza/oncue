@@ -57,11 +57,7 @@ export type OnCueEvent =
   | "use_case_skipped"
   | "feedback_opened"
   | "feedback_submitted"
-  // Demo
-  | "demo_opened"
-  | "demo_played"
-  | "demo_note_added"
-  | "demo_cta_clicked"
+
 
 type Props = Record<string, string | number | boolean | null>
 

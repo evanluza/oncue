@@ -570,13 +570,6 @@ export default function AnnotatePage() {
 
             <MyTracks />
 
-            <p className="text-xs text-muted-foreground/70">
-              No file handy?{" "}
-              <Link href="/demo" className="text-accent hover:underline">
-                See a marked-up example
-              </Link>
-            </p>
-
             <FeedbackButton className="pt-2" />
           </div>
         </div>

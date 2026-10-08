@@ -145,13 +145,6 @@ export default function LandingPage() {
                 Upload audio
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              {/* Nobody browsing on a phone has a student recording to hand. */}
-              <Link
-                href="/demo"
-                className="inline-flex items-center gap-2 rounded-lg border border-border/60 px-6 h-11 text-sm font-medium text-foreground hover:border-accent/40 hover:text-accent transition-colors"
-              >
-                See it working
-              </Link>
             </div>
           </div>
 

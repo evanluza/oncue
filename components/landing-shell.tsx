@@ -86,12 +86,7 @@ export function LandingShell({
               Upload audio
               <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/demo" className="text-sm text-muted-foreground hover:text-accent transition-colors">
-              or see a marked-up example
-            </Link>
-            <span className="w-full text-xs text-muted-foreground/70 sm:w-auto">
-              Free · no account · nothing to install
-            </span>
+            <span className="text-xs text-muted-foreground/70">Free · no account · nothing to install</span>
           </div>
         </header>
 
