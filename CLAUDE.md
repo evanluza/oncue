@@ -38,6 +38,7 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 - `components/post-share-prompts.tsx` — email capture then the use-case question, shown only after a share link exists. Both skippable, asked once per browser.
 - `components/feedback-button.tsx` — "Have feedback?" → textarea + optional email → `product_feedback`.
 - `lib/site.ts` — the canonical origin (`www.oncue.audio`) used by metadata, `app/sitemap.ts` and `app/robots.ts`. Share pages are `noindex`.
+- `components/note-body.tsx` — the read and edit states of one note's text, shared by both timelines. Owns the length cap, the auto-growing textarea, the near-limit counter, and one-line truncation with click-to-expand plus a hover tooltip. Both lists render it; don't reintroduce per-list textareas.
 - `lib/utils.ts` — cn() utility
 - `hooks/use-keyboard-controls.ts` — Spacebar play/pause, arrow key skip
 - `public/` — Logo assets + oncue-og.png (OG image)
@@ -73,6 +74,7 @@ the type or from `macroLabels`.
 ## Limits
 - **File size:** 25MB max per upload (validated client-side with clear error message)
 - **File types:** .mp3, .wav, .m4a/.aac (MIME or extension match — browsers disagree on m4a). Rejections fire `upload_rejected`.
+- **Note length:** 500 characters, set once in `components/note-body.tsx` as `NOTE_MAX_LENGTH` (was 120, raised Oct 2026). The `annotations.text` column is Postgres `text`, so there is no database cap to migrate.
 - **No auth yet** — contributor identity is name + color via localStorage, and naming is optional
 - **No per-user upload limits yet** — planned for post-MVP (track via upload_logs table)
 

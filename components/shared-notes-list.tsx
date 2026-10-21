@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { NoteBody } from "@/components/note-body"
 import { Trash2, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AnnotationRow } from "@/lib/db"
@@ -95,46 +96,16 @@ export function SharedNotesList({
               </div>
 
               {/* Note text */}
-              {isEditing && isEditableType && isOwn ? (
-                <textarea
-                  autoFocus
-                  value={annotation.text}
-                  onChange={(e) => onUpdateAnnotation(annotation.id, e.target.value)}
-                  onBlur={() => setEditingId(null)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") setEditingId(null)
-                    if (e.key === "Enter" && e.metaKey) setEditingId(null)
-                  }}
-                  placeholder="Add your note here..."
-                  maxLength={120}
-                  className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
-                  rows={3}
-                />
-              ) : (
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (isEditableType && isOwn) setEditingId(annotation.id)
-                  }}
-                  className={cn("w-full text-left", isEditableType && isOwn && "cursor-text")}
-                >
-                  {annotation.text ? (
-                    <p
-                      className={cn(
-                        "text-sm leading-relaxed",
-                        !isEditableType ? "text-foreground font-medium" : "text-foreground",
-                      )}
-                    >
-                      {annotation.text}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">
-                      {isOwn ? placeholderText : "Empty note"}
-                    </p>
-                  )}
-                </div>
-              )}
+              <NoteBody
+                text={annotation.text}
+                placeholder={isOwn ? placeholderText : "Empty note"}
+                editable={isEditableType && isOwn}
+                emphasized={!isEditableType}
+                isEditing={isEditing}
+                onStartEditing={() => setEditingId(annotation.id)}
+                onStopEditing={() => setEditingId(null)}
+                onChange={(text) => onUpdateAnnotation(annotation.id, text)}
+              />
             </div>
 
             {/* Delete — only your own */}

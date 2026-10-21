@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { Note } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { NoteBody } from "@/components/note-body"
 import { Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -69,44 +70,16 @@ export function NotesList({ notes, currentTime, onNoteClick, onUpdateNote, onDel
 
             {/* Note content */}
             <div className="flex-1 min-w-0">
-              {isEditing && isEditableType ? (
-                <textarea
-                  autoFocus
-                  value={note.text}
-                  onChange={(e) => onUpdateNote(note.id, e.target.value)}
-                  onBlur={() => setEditingId(null)}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") setEditingId(null)
-                    if (e.key === "Enter" && e.metaKey) setEditingId(null)
-                  }}
-                  placeholder="Add your note here..."
-                  maxLength={120}
-                  className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
-                  rows={3}
-                />
-              ) : (
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (isEditableType) setEditingId(note.id)
-                  }}
-                  className={cn("w-full text-left", isEditableType && "cursor-text")}
-                >
-                  {note.text ? (
-                    <p
-                      className={cn(
-                        "text-sm leading-relaxed",
-                        !isEditableType ? "text-foreground font-medium" : "text-foreground",
-                      )}
-                    >
-                      {note.text}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">{placeholderText}</p>
-                  )}
-                </div>
-              )}
+              <NoteBody
+                text={note.text}
+                placeholder={placeholderText}
+                editable={isEditableType}
+                emphasized={!isEditableType}
+                isEditing={isEditing}
+                onStartEditing={() => setEditingId(note.id)}
+                onStopEditing={() => setEditingId(null)}
+                onChange={(text) => onUpdateNote(note.id, text)}
+              />
             </div>
 
             {/* Delete button */}
