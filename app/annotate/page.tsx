@@ -18,6 +18,7 @@ import { ensureContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
 import { addMyProject } from "@/lib/my-projects"
 import { ev } from "@/lib/analytics"
+import { canonicalAudioType, fileExtension } from "@/lib/audio-types"
 import { readReferral } from "@/lib/referral"
 import { daysSince, getCreator, touchVisit, updateCreator } from "@/lib/identity"
 import { PostSharePrompts } from "@/components/post-share-prompts"
@@ -47,30 +48,12 @@ async function copyToClipboard(text: string): Promise<boolean> {
  * lesson recordings and phone-captured audio arrive. Rejecting it turned away
  * the exact uploads the tool is best at, silently.
  *
- * Extension is checked alongside MIME type because browsers disagree about
- * m4a: Chrome reports audio/mp4, Safari audio/x-m4a, and a file dragged from
- * some sources arrives with an empty type.
+ * The accepted set now lives in lib/audio-types.ts so this check and the
+ * bucket's allowed_mime_types can't drift apart — a file the page accepts but
+ * the bucket rejects fails after the person has already chosen it.
  */
-const ACCEPTED_TYPES = new Set([
-  "audio/wav",
-  "audio/x-wav",
-  "audio/wave",
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/mp4",
-  "audio/x-m4a",
-  "audio/m4a",
-  "audio/aac",
-])
-const ACCEPTED_EXTENSIONS = [".wav", ".mp3", ".m4a", ".aac", ".mp4"]
-
-function fileExtension(name: string) {
-  const i = name.lastIndexOf(".")
-  return i === -1 ? "" : name.slice(i).toLowerCase()
-}
-
 function isAudioFile(file: File) {
-  return ACCEPTED_TYPES.has(file.type) || ACCEPTED_EXTENSIONS.includes(fileExtension(file.name))
+  return canonicalAudioType(file) !== null
 }
 
 function formatFileSize(bytes: number) {

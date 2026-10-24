@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase"
+import { canonicalAudioType } from "./audio-types"
 import type { MacroType } from "./types"
 
 export type ProjectRow = {
@@ -29,14 +30,17 @@ export async function createProject(
   createdBy: string,
   creatorColor: string
 ): Promise<ProjectRow> {
-  // Upload audio to Supabase Storage
-  const fileExt = name.split(".").pop()
-  const filePath = `${crypto.randomUUID()}.${fileExt}`
+  // The key's extension and the contentType both come from the validated file,
+  // never from the filename — see lib/audio-types.ts.
+  const canonical = canonicalAudioType(audioFile)
+  if (!canonical) throw new Error("Unsupported audio format")
+
+  const filePath = `${crypto.randomUUID()}.${canonical.ext}`
 
   const { error: uploadError } = await getSupabase().storage
     .from("audio")
     .upload(filePath, audioFile, {
-      contentType: audioFile.type,
+      contentType: canonical.mimeType,
       cacheControl: "3600",
     })
 
