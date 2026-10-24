@@ -39,6 +39,12 @@ OnCue is an audio annotation web app. Users upload .mp3/.wav/.m4a files, annotat
 - `components/feedback-button.tsx` — "Have feedback?" → textarea + optional email → `product_feedback`.
 - `lib/site.ts` — the canonical origin (`www.oncue.audio`) used by metadata, `app/sitemap.ts` and `app/robots.ts`. Share pages are `noindex`.
 - `components/note-body.tsx` — the read and edit states of one note's text, shared by both timelines. Owns the length cap, the auto-growing textarea, the near-limit counter, and one-line truncation with click-to-expand plus a hover tooltip. Both lists render it; don't reintroduce per-list textareas.
+- `lib/audio-types.ts` — the single source of truth for accepted audio. Maps every browser MIME variant onto one of four canonical types and derives the stored extension from that, never from the filename. Must stay in step with the bucket's `allowed_mime_types`.
+- `lib/edit-tokens.ts` — per-note edit tokens in localStorage; only the SHA-256 hash is stored, and `get_project` strips it. Losing site data makes your own notes read-only, never deleted.
+- `lib/waveform.ts` — peaks computed at upload (1000, 3dp, ~6KB) so share pages don't download the audio to draw it.
+- `lib/export-notes.ts` — notes as text and as a Reaper marker CSV. Audio can expire; the feedback has to be portable.
+- `app/api/upload-url/route.ts` — the only way into the bucket. Validates type and size with the service role, returns a one-shot signed URL for `{project_id}/{uuid}.{ext}`. Its rate limit is in-memory and therefore per-instance; Vercel Firewall is the real control.
+- `scripts/admin-delete-project.mjs` — takedowns and test cleanup. Deletes the object first so a failure leaves a retryable row rather than orphaned bytes.
 - `lib/utils.ts` — cn() utility
 - `hooks/use-keyboard-controls.ts` — Spacebar play/pause, arrow key skip
 - `public/` — Logo assets + oncue-og.png (OG image)
@@ -74,8 +80,9 @@ the type or from `macroLabels`.
 ## Limits
 - **File size:** 25MB max per upload (validated client-side with clear error message)
 - **File types:** .mp3, .wav, .m4a/.aac (MIME or extension match — browsers disagree on m4a). Rejections fire `upload_rejected`.
+- **Audio retention:** 30 days after the last note. `last_activity_at` restarts on every note; the daily sweep (`/api/cron/expire-audio`) deletes only the storage object and sets `audio_expired`. Project and annotation rows are never deleted. **Ships disabled** — needs `CRON_SECRET` to run at all and `RETENTION_SWEEP_ENABLED=true` to delete anything; otherwise it dry-runs.
 - **Note length:** 500 characters, set once in `components/note-body.tsx` as `NOTE_MAX_LENGTH` (was 120, raised Oct 2026). The `annotations.text` column is Postgres `text`, so there is no database cap to migrate.
-- **No auth yet** — contributor identity is name + color via localStorage, and naming is optional
+- **No auth yet** — contributor identity is name + color via localStorage, and naming is optional. Anon has **no** table privileges: reads go through `get_project`, writes through `add_annotation` / `update_annotation` / `delete_annotation`, uploads through `/api/upload-url`. Don't reintroduce direct table access.
 - **No per-user upload limits yet** — planned for post-MVP (track via upload_logs table)
 
 ## Parked work

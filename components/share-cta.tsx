@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Upload } from "lucide-react"
+import { ReportLink } from "@/components/report-link"
 import { ev } from "@/lib/analytics"
 import { markReferredFromShare } from "@/lib/referral"
 import { FeedbackButton } from "@/components/feedback-button"
@@ -37,9 +38,17 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
           <Upload className="h-4 w-4" />
           Start annotating
         </Link>
-        <div className="flex items-center justify-center gap-3 pt-2 text-xs text-muted-foreground/60">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 pt-2 text-xs text-muted-foreground/60">
           <FeedbackButton />
           <span aria-hidden>·</span>
+          {/* Both the link and its separator appear only once an address is
+              configured, or the footer shows a stray double dot. */}
+          {process.env.NEXT_PUBLIC_REPORT_EMAIL && (
+            <>
+              <ReportLink projectId={projectId} />
+              <span aria-hidden>·</span>
+            </>
+          )}
           <a
             href="https://www.elulabs.com/#contact"
             target="_blank"
