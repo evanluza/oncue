@@ -140,3 +140,153 @@ $$;
 -- The function is the only way in; the tables behind it stay unreachable.
 revoke all on function public.get_project(uuid) from public;
 grant execute on function public.get_project(uuid) to anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 2026-10-24 (step 3a): note ownership without accounts
+--
+-- Anyone holding the public anon key could edit or delete ANY note on ANY
+-- project. A note is now editable only by whoever holds its edit token: the
+-- token lives in the author's localStorage and only its SHA-256 hash is
+-- stored, so the database holds nothing that grants edit rights.
+--
+-- get_project() strips edit_token_hash — without that, every reader would be
+-- handed the value that proves ownership.
+--
+-- The 927 notes written before this have no token and are read-only for
+-- everyone, which is strictly safer than the state they were in.
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ── 1. Where the hash lives ────────────────────────────────────────────────
+alter table public.annotations add column if not exists edit_token_hash text;
+
+-- ── 2. Stop get_project leaking the hash ───────────────────────────────────
+-- to_jsonb(a) would now include edit_token_hash, handing every reader the
+-- value that proves ownership. Strip it.
+create or replace function public.get_project(id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select jsonb_build_object(
+    'project', to_jsonb(p),
+    'annotations', coalesce((
+      select jsonb_agg((to_jsonb(a) - 'edit_token_hash') order by a.timestamp)
+      from public.annotations a
+      where a.project_id = p.id
+    ), '[]'::jsonb)
+  )
+  from public.projects p
+  where p.id = get_project.id;
+$$;
+
+-- ── 3. Insert: requires a real project, caps the text ──────────────────────
+create or replace function public.add_annotation(
+  p_project_id       uuid,
+  p_timestamp        double precision,
+  p_text             text,
+  p_type             text,
+  p_contributor_name text,
+  p_contributor_color text,
+  p_edit_token_hash  text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  new_id uuid;
+begin
+  -- A note may only hang off a project that exists.
+  if not exists (select 1 from public.projects where id = p_project_id) then
+    raise exception 'unknown project';
+  end if;
+
+  -- Matches NOTE_MAX_LENGTH in components/note-body.tsx. The column is `text`,
+  -- so without this an anonymous caller could insert a megabyte per note.
+  if p_text is null or char_length(p_text) > 500 then
+    raise exception 'invalid note text';
+  end if;
+
+  if p_timestamp is null or p_timestamp < 0 then
+    raise exception 'invalid timestamp';
+  end if;
+
+  insert into public.annotations (
+    project_id, timestamp, text, type,
+    contributor_name, contributor_color, edit_token_hash
+  ) values (
+    p_project_id,
+    p_timestamp,
+    p_text,
+    p_type,
+    coalesce(nullif(p_contributor_name, ''), 'Anonymous'),
+    coalesce(nullif(p_contributor_color, ''), '#F4845F'),
+    p_edit_token_hash
+  )
+  returning id into new_id;
+
+  return new_id;
+end;
+$$;
+
+-- ── 4. Update: only the token holder ───────────────────────────────────────
+-- sha256() is core Postgres (11+), so there's no pgcrypto dependency.
+create or replace function public.update_annotation(
+  p_id         uuid,
+  p_text       text,
+  p_edit_token text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if p_text is null or char_length(p_text) > 500 then
+    raise exception 'invalid note text';
+  end if;
+
+  update public.annotations
+     set text = p_text
+   where id = p_id
+     -- `is not null` matters: notes written before this migration have no
+     -- token, and must not be editable by passing a null token.
+     and edit_token_hash is not null
+     and edit_token_hash = encode(sha256(convert_to(p_edit_token, 'utf8')), 'hex');
+
+  return found;
+end;
+$$;
+
+-- ── 5. Delete: only the token holder ───────────────────────────────────────
+create or replace function public.delete_annotation(
+  p_id         uuid,
+  p_edit_token text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  delete from public.annotations
+   where id = p_id
+     and edit_token_hash is not null
+     and edit_token_hash = encode(sha256(convert_to(p_edit_token, 'utf8')), 'hex');
+
+  return found;
+end;
+$$;
+
+-- ── 6. The functions are the only way in ───────────────────────────────────
+revoke all on function public.add_annotation(uuid, double precision, text, text, text, text, text) from public;
+revoke all on function public.update_annotation(uuid, text, text) from public;
+revoke all on function public.delete_annotation(uuid, text) from public;
+
+grant execute on function public.add_annotation(uuid, double precision, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.update_annotation(uuid, text, text) to anon, authenticated;
+grant execute on function public.delete_annotation(uuid, text) to anon, authenticated;
+
+

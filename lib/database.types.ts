@@ -129,8 +129,28 @@ export type Database = {
     }
     Views: Record<string, never>
     Functions: {
-      // SECURITY DEFINER reader for the share page — one project plus its
-      // notes, so the tables themselves need no anon SELECT.
+      // All SECURITY DEFINER. The tables carry no anon privileges; these are
+      // the only way in. Writes take an edit token, reads never return its hash.
+      add_annotation: {
+        Args: {
+          p_project_id: string
+          p_timestamp: number
+          p_text: string
+          p_type: string | null
+          p_contributor_name: string
+          p_contributor_color: string
+          p_edit_token_hash: string
+        }
+        Returns: string
+      }
+      update_annotation: {
+        Args: { p_id: string; p_text: string; p_edit_token: string }
+        Returns: boolean
+      }
+      delete_annotation: {
+        Args: { p_id: string; p_edit_token: string }
+        Returns: boolean
+      }
       get_project: {
         Args: { id: string }
         Returns: {

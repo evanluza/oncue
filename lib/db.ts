@@ -1,5 +1,12 @@
 import { getSupabase } from "./supabase"
 import { canonicalAudioType } from "./audio-types"
+import {
+  newEditToken,
+  hashEditToken,
+  rememberEditToken,
+  getEditToken,
+  forgetEditToken,
+} from "./edit-tokens"
 import type { MacroType } from "./types"
 
 export type ProjectRow = {
@@ -121,10 +128,28 @@ export async function addAnnotation(
   contributorColor: string,
   type?: MacroType
 ): Promise<AnnotationRow> {
-  // Same reason as createProject: no reading the row back, because anon SELECT
-  // on annotations is revoked in step 2.
-  const row: AnnotationRow = {
-    id: crypto.randomUUID(),
+  // The token proves authorship later; only its hash is sent. Generated here so
+  // the caller gets a row back without the write path reading the table.
+  const token = newEditToken()
+  const edit_token_hash = await hashEditToken(token)
+
+  const { data, error } = await getSupabase().rpc("add_annotation", {
+    p_project_id: projectId,
+    p_timestamp: timestamp,
+    p_text: text,
+    p_type: type ?? null,
+    p_contributor_name: contributorName,
+    p_contributor_color: contributorColor,
+    p_edit_token_hash: edit_token_hash,
+  })
+
+  if (error) throw new Error(`Add annotation failed: ${error.message}`)
+
+  const id = data as string
+  rememberEditToken(id, token)
+
+  return {
+    id,
     project_id: projectId,
     timestamp,
     text,
@@ -133,40 +158,35 @@ export async function addAnnotation(
     contributor_color: contributorColor,
     created_at: new Date().toISOString(),
   }
+}
 
-  const { error } = await getSupabase().from("annotations").insert({
-    id: row.id,
-    project_id: row.project_id,
-    timestamp: row.timestamp,
-    text: row.text,
-    type: row.type,
-    contributor_name: row.contributor_name,
-    contributor_color: row.contributor_color,
+/** Succeeds only if this browser holds the note's edit token. */
+export async function updateAnnotation(id: string, text: string): Promise<boolean> {
+  const token = getEditToken(id)
+  if (!token) return false
+
+  const { data, error } = await getSupabase().rpc("update_annotation", {
+    p_id: id,
+    p_text: text,
+    p_edit_token: token,
   })
 
-  if (error) throw new Error(`Add annotation failed: ${error.message}`)
-  return row
-}
-
-export async function updateAnnotation(
-  id: string,
-  text: string
-): Promise<void> {
-  const { error } = await getSupabase()
-    .from("annotations")
-    .update({ text })
-    .eq("id", id)
-
   if (error) throw new Error(`Update annotation failed: ${error.message}`)
+  return data === true
 }
 
-export async function deleteAnnotation(id: string): Promise<void> {
-  const { error } = await getSupabase()
-    .from("annotations")
-    .delete()
-    .eq("id", id)
+export async function deleteAnnotation(id: string): Promise<boolean> {
+  const token = getEditToken(id)
+  if (!token) return false
+
+  const { data, error } = await getSupabase().rpc("delete_annotation", {
+    p_id: id,
+    p_edit_token: token,
+  })
 
   if (error) throw new Error(`Delete annotation failed: ${error.message}`)
+  if (data === true) forgetEditToken(id)
+  return data === true
 }
 
 // ── Research writes ──

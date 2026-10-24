@@ -264,11 +264,16 @@ export default function SharePage() {
   }
 
   const handleDeleteAnnotation = async (id: string) => {
+    const previous = annotations
     setAnnotations((prev) => prev.filter((a) => a.id !== id))
     try {
-      await db.deleteAnnotation(id)
+      // Returns false when this browser doesn't hold the note's edit token —
+      // the row is untouched, so put the note back rather than leaving the
+      // list disagreeing with the database.
+      if (!(await db.deleteAnnotation(id))) setAnnotations(previous)
     } catch (err) {
       console.error("Failed to delete:", err)
+      setAnnotations(previous)
     }
   }
 

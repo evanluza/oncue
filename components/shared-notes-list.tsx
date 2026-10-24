@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { NoteBody } from "@/components/note-body"
+import { canEditNote } from "@/lib/edit-tokens"
 import { Trash2, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AnnotationRow } from "@/lib/db"
@@ -55,7 +56,10 @@ export function SharedNotesList({
       {annotations.map((annotation) => {
         const isActive = isNearCurrentTime(annotation.timestamp)
         const isEditing = editingId === annotation.id
-        const isOwn = annotation.contributor_name === contributorName
+        // A matching name never granted rights server-side and no longer
+        // grants them here: editing requires the note's edit token.
+        const isMine = canEditNote(annotation.id)
+        const nameMatches = annotation.contributor_name === contributorName
         const isEditableType = !annotation.type || annotation.type === "note" || annotation.type === "idea"
         const placeholderText = annotation.type === "idea" ? "Click to leave idea..." : "Click to add note..."
 
@@ -91,15 +95,15 @@ export function SharedNotesList({
                 />
                 <span className="text-[11px] text-muted-foreground/60">
                   {annotation.contributor_name}
-                  {isOwn && <span className="text-muted-foreground/40 ml-1">(you)</span>}
+                  {nameMatches && <span className="text-muted-foreground/40 ml-1">(you)</span>}
                 </span>
               </div>
 
               {/* Note text */}
               <NoteBody
                 text={annotation.text}
-                placeholder={isOwn ? placeholderText : "Empty note"}
-                editable={isEditableType && isOwn}
+                placeholder={isMine ? placeholderText : "Empty note"}
+                editable={isEditableType && isMine}
                 emphasized={!isEditableType}
                 isEditing={isEditing}
                 onStartEditing={() => setEditingId(annotation.id)}
@@ -109,7 +113,7 @@ export function SharedNotesList({
             </div>
 
             {/* Delete — only your own */}
-            {isOwn && (
+            {isMine && (
               <Button
                 variant="ghost"
                 size="icon"

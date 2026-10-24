@@ -298,7 +298,7 @@ export default function AnnotatePage() {
       setProjectId(project.id)
 
       for (const note of notes) {
-        await db.addAnnotation(
+        const row = await db.addAnnotation(
           project.id,
           note.timestamp,
           note.text,
@@ -306,6 +306,11 @@ export default function AnnotatePage() {
           who.color,
           note.type
         )
+        // Adopt the database id. These notes were created before the project
+        // existed, so they carry a local placeholder id; the edit token is
+        // stored against the real row id, and without this swap the creator
+        // can't edit their own pre-share notes afterwards.
+        setNotes((prev) => prev.map((n) => (n.id === note.id ? { ...n, id: row.id } : n)))
       }
 
       // Without accounts, this list is the creator's only route back to the
