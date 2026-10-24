@@ -37,9 +37,16 @@ export async function createProject(
 
   const filePath = `${crypto.randomUUID()}.${canonical.ext}`
 
+  // The `contentType` option below does NOT win for a Blob/File body:
+  // supabase-js sends it as a multipart part and storage reads the part's own
+  // type, so a File with an empty type arrives as application/octet-stream and
+  // the bucket's allowed_mime_types rejects it. Re-wrapping the bytes in a Blob
+  // that carries the canonical type is what actually sets it.
+  const body = new Blob([audioFile], { type: canonical.mimeType })
+
   const { error: uploadError } = await getSupabase().storage
     .from("audio")
-    .upload(filePath, audioFile, {
+    .upload(filePath, body, {
       contentType: canonical.mimeType,
       cacheControl: "3600",
     })
