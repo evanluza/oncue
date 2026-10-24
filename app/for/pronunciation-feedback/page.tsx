@@ -39,6 +39,10 @@ const FAQS = [
     q: "Can I use phonetic symbols in a note?",
     a: "Yes — notes are plain text, so IPA works if your keyboard produces it. Plenty of teachers skip it and write the sound in a way the learner already understands.",
   },
+  {
+    q: "How long does a shared recording stay up?",
+    a: "The audio stays available for 30 days after the last note, and every new note restarts that — so a recording stays playable for as long as you and the learner are still working on it. The link itself keeps working, your notes are kept for good, and you can download them as text any time.",
+  },
 ]
 
 export default function PronunciationFeedbackPage() {

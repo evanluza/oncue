@@ -39,6 +39,10 @@ const FAQS = [
     q: "Is the link private?",
     a: "It's unlisted and not indexed by search engines, but anyone who has it can open the track — there's no password yet. For unreleased material, treat it like any other shareable link.",
   },
+  {
+    q: "How long does a shared track stay up?",
+    a: "The audio stays available for 30 days after the last note, and every new note restarts that — so a mix in revision stays playable. The link itself keeps working, your notes are kept for good, and you can export them as text or as a marker CSV for Reaper any time.",
+  },
 ]
 
 export default function MusicFeedbackPage() {

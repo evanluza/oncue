@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Can I keep a record of past feedback?",
-    a: "Your recent shared tracks are listed on the upload screen of the browser you shared from. A link stays live for 30 days after the last note, and each new note restarts that; the notes themselves never expire and can be downloaded as text. There are no accounts yet, so if you clear your browser data that list goes — saved links keep working.",
+    a: "Your recent shared tracks are listed on the upload screen of the browser you shared from. The audio stays available for 30 days after the last note, and every new note restarts that — so a recording stays playable for as long as it is being worked on. Your notes are kept for good either way, and you can download them as text or as a marker file any time. There are no accounts yet, so if you clear your browser data that list goes — saved links keep working.",
   },
 ]
 

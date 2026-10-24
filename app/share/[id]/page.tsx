@@ -412,7 +412,8 @@ export default function SharePage() {
             <div className="border-t border-border/50 px-4 py-4">
               <div className="mx-auto flex w-full max-w-md flex-col items-center gap-2.5 text-center">
                 <p className="text-xs text-muted-foreground/70">
-                  This link stays live for 30 days after the last note. Download your notes anytime.
+                  The audio stays available for 30 days after the last note. Your notes stay for
+                  good — download them any time.
                 </p>
                 <DownloadNotes trackName={project.name} annotations={annotations} />
               </div>

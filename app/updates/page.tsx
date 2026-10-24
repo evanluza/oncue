@@ -7,7 +7,7 @@ import { FeedbackButton } from "@/components/feedback-button"
 export const metadata: Metadata = {
   title: "What's new",
   description:
-    "Recent changes to OnCue — longer notes, downloadable feedback, faster share pages, and how long a link stays live.",
+    "Recent changes to OnCue — longer notes, downloadable feedback, faster share pages, and how long audio is kept.",
   alternates: { canonical: "/updates" },
 }
 
@@ -43,9 +43,9 @@ const UPDATES: Update[] = [
   {
     date: "2026-10-24",
     displayDate: "24 October 2026",
-    title: "How long a link stays live",
+    title: "How long audio is kept",
     body:
-      "A share link keeps its audio for 30 days after the last note, and every new note restarts the clock — so a track stays up for as long as people are still working on it. The notes themselves are kept, and you can download them any time. OnCue isn't a backup, so keep your own copy of the file.",
+      "The audio on a share link is kept for 30 days after the last note, and every new note restarts that — so a track stays playable for as long as people are still working on it. The link itself keeps working either way, your notes are kept for good, and you can download them any time. OnCue isn't a backup, so keep your own copy of the file.",
   },
   {
     date: "2026-10-24",

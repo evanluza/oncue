@@ -539,6 +539,12 @@ export default function AnnotatePage() {
                 Drag and drop a .mp3, .wav or .m4a, or click below to browse.
               </p>
               <p className="text-[11px] text-muted-foreground/50">Max file size: 25MB</p>
+              {/* Said before the file is chosen, not after sharing. Deciding
+                  whether to put a student's recording here is the moment this
+                  matters, and until now it was only answered afterwards. */}
+              <p className="text-[11px] leading-relaxed text-muted-foreground/50">
+                Audio is kept for 30 days after the last note. Your notes are kept for good.
+              </p>
             </div>
             {uploadError && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -562,7 +568,12 @@ export default function AnnotatePage() {
 
             <MyTracks />
 
-            <FeedbackButton className="pt-2" />
+            {/* Wrapped because both this and the upload Button are inline-level:
+                as siblings they share a line, which jams the feedback link flush
+                against the primary CTA whenever MyTracks renders nothing. */}
+            <div className="pt-2">
+              <FeedbackButton />
+            </div>
           </div>
         </div>
 
@@ -691,8 +702,8 @@ export default function AnnotatePage() {
                     today's behaviour rather than guaranteeing it forever, so
                     adding a retention window later isn't a broken promise. */}
                 <p className="text-xs text-muted-foreground/70">
-                  The link stays live for 30 days after the last note, and the notes stay for good.
-                  Keep your own copy of the file, though: OnCue isn&apos;t a backup.
+                  The audio stays available for 30 days after the last note, and your notes stay for
+                  good. Keep your own copy of the file, though: OnCue isn&apos;t a backup.
                 </p>
               </div>
             </div>
