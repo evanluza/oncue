@@ -9,6 +9,7 @@ import { SharedNotesList } from "@/components/shared-notes-list"
 import { MacroBar } from "@/components/macro-bar"
 import { ContributorPrompt } from "@/components/contributor-prompt"
 import { ShareCta } from "@/components/share-cta"
+import { DownloadNotes } from "@/components/download-notes"
 import { FeedbackButton } from "@/components/feedback-button"
 import { Loader2 } from "lucide-react"
 import Image from "next/image"
@@ -98,7 +99,9 @@ export default function SharePage() {
 
   // New rows carry storage_path; the older ones only have audio_url and a flat
   // object key that stays where it is.
-  const audioSrc = project ? db.audioUrlFor(project) : null
+  // Once the sweep has removed the object there is nothing to point at; the
+  // waveform still draws from stored peaks, it just can't be played.
+  const audioSrc = project && !project.audio_expired ? db.audioUrlFor(project) : null
 
   // Peaks stored at upload. When present the page never fetches the audio to
   // draw the waveform — that fetch plus the <audio> source was two full
@@ -303,9 +306,9 @@ export default function SharePage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4">
         <Image src="/oc-icon-orange.png" alt="OnCue" width={32} height={32} />
         <h1 className="text-lg font-semibold text-foreground">Project not found</h1>
-        {/* Nothing expires, so don't suggest it does — this copy was the only
-            place in the product that implied a time limit, and it read as one
-            to people whose link was simply incomplete. */}
+        {/* Audio can expire but a project row never does, so reaching this
+            means the id is wrong, not that it timed out. An expired project
+            still loads and shows its notes. */}
         <p className="text-sm text-muted-foreground">
           Check that the link is complete — it may have been cut short when it was copied or pasted.
         </p>
@@ -389,6 +392,29 @@ export default function SharePage() {
             onUpdateAnnotation={handleUpdateAnnotation}
             onDeleteAnnotation={handleDeleteAnnotation}
           />
+          {project.audio_expired ? (
+            <div className="border-t border-border/50 bg-card/30 px-4 py-6">
+              <div className="mx-auto w-full max-w-md space-y-3 text-center">
+                <p className="text-sm text-foreground">Audio expired after 30 days of inactivity</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  The notes below are all still here. Upload the track again to listen alongside them.
+                </p>
+                <div className="flex justify-center">
+                  <DownloadNotes trackName={project.name} annotations={annotations} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="border-t border-border/50 px-4 py-4">
+              <div className="mx-auto flex w-full max-w-md flex-col items-center gap-2.5 text-center">
+                <p className="text-xs text-muted-foreground/70">
+                  This link stays live for 30 days after the last note. Download your notes anytime.
+                </p>
+                <DownloadNotes trackName={project.name} annotations={annotations} />
+              </div>
+            </div>
+          )}
+
           <ShareCta projectId={projectId} annotated={hasAnnotatedHere} />
         </div>
       </main>

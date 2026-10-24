@@ -17,6 +17,10 @@ export type ProjectRow = {
   storage_path: string | null
   /** Waveform peaks computed at upload; null for rows from before step 5. */
   peaks: number[] | null
+  /** Restarted by every new note; drives the 30-day retention window. */
+  last_activity_at: string
+  /** True once the retention sweep has removed the stored audio. */
+  audio_expired: boolean
   created_by: string
   creator_color: string
   created_at: string
@@ -98,6 +102,8 @@ export async function createProject(
     audio_url: urlData.publicUrl,
     storage_path: path,
     peaks: peaks ?? null,
+    last_activity_at: new Date().toISOString(),
+    audio_expired: false,
     created_by: createdBy,
     creator_color: creatorColor,
     created_at: new Date().toISOString(),

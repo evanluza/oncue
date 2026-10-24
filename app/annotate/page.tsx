@@ -691,8 +691,8 @@ export default function AnnotatePage() {
                     today's behaviour rather than guaranteeing it forever, so
                     adding a retention window later isn't a broken promise. */}
                 <p className="text-xs text-muted-foreground/70">
-                  Links don&apos;t expire — anyone you send this to can open it any time. Keep your own
-                  copy of the file, though: OnCue isn&apos;t a backup.
+                  The link stays live for 30 days after the last note, and the notes stay for good.
+                  Keep your own copy of the file, though: OnCue isn&apos;t a backup.
                 </p>
               </div>
             </div>

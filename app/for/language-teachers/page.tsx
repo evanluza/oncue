@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "How long do the links last?",
-    a: "There's no expiry today. Links stay live, and you can send the same one again if a student loses it.",
+    a: "The link stays live for 30 days after the last note, and every new note restarts the clock — so a lesson stays up as long as it is being used. The notes themselves never expire, and you can download them as text any time.",
   },
 ]
 

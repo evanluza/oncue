@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "Can I keep a record of past feedback?",
-    a: "Your recent shared tracks are listed on the upload screen of the browser you shared from, and links don't expire. There are no accounts yet, so if you clear your browser data that list goes — the links themselves keep working if you've saved them elsewhere.",
+    a: "Your recent shared tracks are listed on the upload screen of the browser you shared from. A link stays live for 30 days after the last note, and each new note restarts that; the notes themselves never expire and can be downloaded as text. There are no accounts yet, so if you clear your browser data that list goes — saved links keep working.",
   },
 ]
 

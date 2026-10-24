@@ -13,6 +13,8 @@ export type Database = {
           audio_url: string
           storage_path: string | null
           peaks: number[] | null
+          last_activity_at: string
+          audio_expired: boolean
           created_by: string
           creator_color: string
           created_at: string
@@ -23,6 +25,8 @@ export type Database = {
           audio_url: string
           storage_path?: string | null
           peaks?: number[] | null
+          last_activity_at?: string
+          audio_expired?: boolean
           created_by: string
           creator_color: string
           created_at?: string
@@ -33,6 +37,8 @@ export type Database = {
           audio_url?: string
           storage_path?: string | null
           peaks?: number[] | null
+          last_activity_at?: string
+          audio_expired?: boolean
           created_by?: string
           creator_color?: string
         }
