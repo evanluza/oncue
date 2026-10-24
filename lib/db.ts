@@ -55,44 +55,63 @@ export async function createProject(
 
   const { data: urlData } = getSupabase().storage.from("audio").getPublicUrl(filePath)
 
-  const { data, error } = await getSupabase()
-    .from("projects")
-    .insert({
-      name,
-      audio_url: urlData.publicUrl,
-      created_by: createdBy,
-      creator_color: creatorColor,
-    })
-    .select()
-    .single()
+  // The id is generated here rather than read back. `insert().select()` needs
+  // SELECT on the table to return the row, and anon SELECT is exactly what
+  // step 2 revokes — so nothing on the write path may ask for the row back.
+  const row: ProjectRow = {
+    id: crypto.randomUUID(),
+    name,
+    audio_url: urlData.publicUrl,
+    created_by: createdBy,
+    creator_color: creatorColor,
+    created_at: new Date().toISOString(),
+  }
+
+  const { error } = await getSupabase().from("projects").insert({
+    id: row.id,
+    name: row.name,
+    audio_url: row.audio_url,
+    created_by: row.created_by,
+    creator_color: row.creator_color,
+  })
 
   if (error) throw new Error(`Create project failed: ${error.message}`)
-  return data
+  return row
+}
+
+export type ProjectWithAnnotations = {
+  project: ProjectRow
+  annotations: AnnotationRow[]
+}
+
+/**
+ * One share page in one call, through a SECURITY DEFINER function. The tables
+ * are not readable by the anon key: this returns the single project whose id
+ * you already hold, so a share link can't be turned into a list of every
+ * project and its audio URL.
+ */
+export async function getProjectWithAnnotations(
+  id: string
+): Promise<ProjectWithAnnotations | null> {
+  const { data, error } = await getSupabase().rpc("get_project", { id })
+
+  if (error) throw new Error(`Fetch project failed: ${error.message}`)
+
+  const payload = data as { project: ProjectRow | null; annotations: AnnotationRow[] } | null
+  if (!payload?.project) return null
+
+  return { project: payload.project, annotations: payload.annotations ?? [] }
 }
 
 export async function getProject(id: string): Promise<ProjectRow | null> {
-  const { data, error } = await getSupabase()
-    .from("projects")
-    .select()
-    .eq("id", id)
-    .single()
-
-  if (error) return null
-  return data
+  try {
+    return (await getProjectWithAnnotations(id))?.project ?? null
+  } catch {
+    return null
+  }
 }
 
 // ── Annotations ──
-
-export async function getAnnotations(projectId: string): Promise<AnnotationRow[]> {
-  const { data, error } = await getSupabase()
-    .from("annotations")
-    .select()
-    .eq("project_id", projectId)
-    .order("timestamp", { ascending: true })
-
-  if (error) throw new Error(`Fetch annotations failed: ${error.message}`)
-  return data ?? []
-}
 
 export async function addAnnotation(
   projectId: string,
@@ -102,21 +121,31 @@ export async function addAnnotation(
   contributorColor: string,
   type?: MacroType
 ): Promise<AnnotationRow> {
-  const { data, error } = await getSupabase()
-    .from("annotations")
-    .insert({
-      project_id: projectId,
-      timestamp,
-      text,
-      type: type ?? null,
-      contributor_name: contributorName,
-      contributor_color: contributorColor,
-    })
-    .select()
-    .single()
+  // Same reason as createProject: no reading the row back, because anon SELECT
+  // on annotations is revoked in step 2.
+  const row: AnnotationRow = {
+    id: crypto.randomUUID(),
+    project_id: projectId,
+    timestamp,
+    text,
+    type: type ?? null,
+    contributor_name: contributorName,
+    contributor_color: contributorColor,
+    created_at: new Date().toISOString(),
+  }
+
+  const { error } = await getSupabase().from("annotations").insert({
+    id: row.id,
+    project_id: row.project_id,
+    timestamp: row.timestamp,
+    text: row.text,
+    type: row.type,
+    contributor_name: row.contributor_name,
+    contributor_color: row.contributor_color,
+  })
 
   if (error) throw new Error(`Add annotation failed: ${error.message}`)
-  return data
+  return row
 }
 
 export async function updateAnnotation(

@@ -102,3 +102,41 @@ alter table product_feedback enable row level security;
 create policy "Anyone can submit an email capture" on email_captures for insert with check (true);
 create policy "Anyone can submit a use case" on use_case_responses for insert with check (true);
 create policy "Anyone can submit feedback" on product_feedback for insert with check (true);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 2026-10-24 (step 2a): read a share page through one function
+--
+-- The share page read `projects` and `annotations` directly, which needed anon
+-- SELECT on both tables. Anyone holding the public anon key could therefore
+-- list every project and harvest every audio_url — the unguessable share UUID
+-- was irrelevant, because the index itself was readable.
+--
+-- get_project() returns exactly one project and its notes, so the anon SELECT
+-- policies can be dropped (step 2b, below) without breaking share links.
+--
+-- SECURITY DEFINER runs it as the owner, past RLS; `set search_path` is
+-- mandatory with that, or the body can be hijacked via a shadowed table name.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+create or replace function public.get_project(id uuid)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select jsonb_build_object(
+    'project', to_jsonb(p),
+    'annotations', coalesce((
+      select jsonb_agg(to_jsonb(a) order by a.timestamp)
+      from public.annotations a
+      where a.project_id = p.id
+    ), '[]'::jsonb)
+  )
+  from public.projects p
+  where p.id = get_project.id;
+$$;
+
+-- The function is the only way in; the tables behind it stay unreachable.
+revoke all on function public.get_project(uuid) from public;
+grant execute on function public.get_project(uuid) to anon, authenticated;

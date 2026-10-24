@@ -128,7 +128,17 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      // SECURITY DEFINER reader for the share page — one project plus its
+      // notes, so the tables themselves need no anon SELECT.
+      get_project: {
+        Args: { id: string }
+        Returns: {
+          project: Database["public"]["Tables"]["projects"]["Row"] | null
+          annotations: Database["public"]["Tables"]["annotations"]["Row"][]
+        }
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

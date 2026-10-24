@@ -51,15 +51,14 @@ export default function SharePage() {
   useEffect(() => {
     async function load() {
       try {
-        const proj = await db.getProject(projectId)
-        if (!proj) {
+        // One call through the RPC: the anon key can't read the tables.
+        const loaded = await db.getProjectWithAnnotations(projectId)
+        if (!loaded) {
           setError("Project not found")
           return
         }
-        setProject(proj)
-
-        const annots = await db.getAnnotations(projectId)
-        setAnnotations(annots)
+        setProject(loaded.project)
+        setAnnotations(loaded.annotations)
       } catch (err) {
         setError("Failed to load project")
         console.error(err)
