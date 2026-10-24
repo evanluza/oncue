@@ -13,6 +13,8 @@ export type ProjectRow = {
   id: string
   name: string
   audio_url: string
+  /** Object key for uploads from step 4 on; null for the 86 older rows. */
+  storage_path: string | null
   created_by: string
   creator_color: string
   created_at: string
@@ -37,38 +39,56 @@ export async function createProject(
   createdBy: string,
   creatorColor: string
 ): Promise<ProjectRow> {
-  // The key's extension and the contentType both come from the validated file,
-  // never from the filename — see lib/audio-types.ts.
+  // The contentType comes from the validated file, never from the filename —
+  // see lib/audio-types.ts. The server derives the object key's extension from
+  // this type, so a filename can't decide what the stored object is called.
   const canonical = canonicalAudioType(audioFile)
   if (!canonical) throw new Error("Unsupported audio format")
 
-  const filePath = `${crypto.randomUUID()}.${canonical.ext}`
+  // The project id exists before the upload, because the object key is
+  // {project_id}/{uuid}.{ext}. It is also what the insert below uses, so the
+  // write path never has to read the row back.
+  const projectId = crypto.randomUUID()
 
-  // The `contentType` option below does NOT win for a Blob/File body:
-  // supabase-js sends it as a multipart part and storage reads the part's own
-  // type, so a File with an empty type arrives as application/octet-stream and
-  // the bucket's allowed_mime_types rejects it. Re-wrapping the bytes in a Blob
-  // that carries the canonical type is what actually sets it.
+  // The browser no longer writes to the bucket directly. This route checks the
+  // type and size with the service role and hands back a one-shot signed URL.
+  const res = await fetch("/api/upload-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      projectId,
+      contentType: canonical.mimeType,
+      size: audioFile.size,
+    }),
+  })
+
+  if (!res.ok) {
+    const { error } = await res.json().catch(() => ({ error: "" }))
+    throw new Error(`Upload failed: ${error || res.statusText}`)
+  }
+
+  const { path, token } = (await res.json()) as { path: string; token: string }
+
+  // The `contentType` option does NOT win for a Blob/File body: supabase-js
+  // sends it as a multipart part and storage reads that part's own type, so a
+  // File with an empty type arrives as application/octet-stream and the
+  // bucket's allowed_mime_types rejects it. Re-wrapping the bytes in a Blob
+  // carrying the canonical type is what actually sets it.
   const body = new Blob([audioFile], { type: canonical.mimeType })
 
-  const { error: uploadError } = await getSupabase().storage
-    .from("audio")
-    .upload(filePath, body, {
-      contentType: canonical.mimeType,
-      cacheControl: "3600",
-    })
+  const { error: uploadError } = await getSupabase()
+    .storage.from("audio")
+    .uploadToSignedUrl(path, token, body, { contentType: canonical.mimeType })
 
   if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
 
-  const { data: urlData } = getSupabase().storage.from("audio").getPublicUrl(filePath)
+  const { data: urlData } = getSupabase().storage.from("audio").getPublicUrl(path)
 
-  // The id is generated here rather than read back. `insert().select()` needs
-  // SELECT on the table to return the row, and anon SELECT is exactly what
-  // step 2 revokes — so nothing on the write path may ask for the row back.
   const row: ProjectRow = {
-    id: crypto.randomUUID(),
+    id: projectId,
     name,
     audio_url: urlData.publicUrl,
+    storage_path: path,
     created_by: createdBy,
     creator_color: creatorColor,
     created_at: new Date().toISOString(),
@@ -78,12 +98,25 @@ export async function createProject(
     id: row.id,
     name: row.name,
     audio_url: row.audio_url,
+    storage_path: row.storage_path,
     created_by: row.created_by,
     creator_color: row.creator_color,
   })
 
   if (error) throw new Error(`Create project failed: ${error.message}`)
   return row
+}
+
+/**
+ * Where a project's audio actually lives. New rows carry storage_path; the 86
+ * rows written before step 4 have only audio_url and a flat object key, which
+ * stays exactly where it is.
+ */
+export function audioUrlFor(project: Pick<ProjectRow, "audio_url" | "storage_path">): string {
+  if (project.storage_path) {
+    return getSupabase().storage.from("audio").getPublicUrl(project.storage_path).data.publicUrl
+  }
+  return project.audio_url
 }
 
 export type ProjectWithAnnotations = {

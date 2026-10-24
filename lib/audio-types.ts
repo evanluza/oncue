@@ -80,3 +80,12 @@ export function fileExtension(name: string): string {
 export function canonicalAudioType(file: File): CanonicalAudio | null {
   return BY_MIME[file.type] ?? BY_EXT[extensionOf(file.name)] ?? null
 }
+
+/**
+ * Extension for a type already known to be in ALLOWED_MIME_TYPES. Used by the
+ * signed-upload route, which builds the object key server-side and must never
+ * take an extension from a client-supplied filename.
+ */
+export function extensionForMimeType(mimeType: string): string {
+  return BY_MIME[mimeType]?.ext ?? "bin"
+}

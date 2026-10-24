@@ -95,6 +95,10 @@ export default function SharePage() {
     })
   }, [])
 
+  // New rows carry storage_path; the older ones only have audio_url and a flat
+  // object key that stays where it is.
+  const audioSrc = project ? db.audioUrlFor(project) : null
+
   // Decode audio for waveform
   const decodeAudioFromUrl = useCallback(async (url: string) => {
     try {
@@ -110,10 +114,10 @@ export default function SharePage() {
   }, [])
 
   useEffect(() => {
-    if (project?.audio_url) {
-      decodeAudioFromUrl(project.audio_url)
+    if (audioSrc) {
+      decodeAudioFromUrl(audioSrc)
     }
-  }, [project?.audio_url, decodeAudioFromUrl])
+  }, [audioSrc, decodeAudioFromUrl])
 
   // Audio events
   useEffect(() => {
@@ -165,7 +169,7 @@ export default function SharePage() {
     // while the page is still showing the spinner and <audio> doesn't exist
     // yet. Without a second run nothing is ever bound: playback works, but the
     // clock, the duration and the moving playhead stay frozen at 0:00.
-  }, [project?.audio_url, loading])
+  }, [audioSrc, loading])
 
   const handlePlayPause = useCallback(() => {
     const audio = audioRef.current
@@ -391,7 +395,7 @@ export default function SharePage() {
         />
       )}
 
-      <audio ref={audioRef} src={project.audio_url} />
+      <audio ref={audioRef} src={audioSrc ?? undefined} />
     </div>
   )
 }

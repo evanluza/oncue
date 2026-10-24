@@ -11,6 +11,7 @@ export type Database = {
           id: string
           name: string
           audio_url: string
+          storage_path: string | null
           created_by: string
           creator_color: string
           created_at: string
@@ -19,6 +20,7 @@ export type Database = {
           id?: string
           name: string
           audio_url: string
+          storage_path?: string | null
           created_by: string
           creator_color: string
           created_at?: string
@@ -27,6 +29,7 @@ export type Database = {
         Update: {
           name?: string
           audio_url?: string
+          storage_path?: string | null
           created_by?: string
           creator_color?: string
         }

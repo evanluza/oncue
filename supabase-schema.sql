@@ -290,3 +290,19 @@ grant execute on function public.update_annotation(uuid, text, text) to anon, au
 grant execute on function public.delete_annotation(uuid, text) to anon, authenticated;
 
 
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 2026-10-24 (step 4a): record the new object layout
+--
+-- The browser used to upload straight into the `audio` bucket with the public
+-- anon key, so anyone reading the JS bundle could write arbitrary objects.
+-- Uploads now go through /api/upload-url, which validates type and size with
+-- the service role and returns a one-shot signed URL for
+-- {project_id}/{uuid}.{ext}.
+--
+-- Existing rows keep audio_url and their flat object keys — nothing is moved or
+-- renamed. Readers prefer storage_path when set (db.audioUrlFor) and fall back
+-- to audio_url, so the 86 older rows are untouched.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table public.projects add column if not exists storage_path text;
