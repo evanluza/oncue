@@ -15,6 +15,8 @@ export type ProjectRow = {
   audio_url: string
   /** Object key for uploads from step 4 on; null for the 86 older rows. */
   storage_path: string | null
+  /** Waveform peaks computed at upload; null for rows from before step 5. */
+  peaks: number[] | null
   created_by: string
   creator_color: string
   created_at: string
@@ -37,7 +39,8 @@ export async function createProject(
   name: string,
   audioFile: File,
   createdBy: string,
-  creatorColor: string
+  creatorColor: string,
+  peaks?: number[] | null
 ): Promise<ProjectRow> {
   // The contentType comes from the validated file, never from the filename —
   // see lib/audio-types.ts. The server derives the object key's extension from
@@ -78,7 +81,12 @@ export async function createProject(
 
   const { error: uploadError } = await getSupabase()
     .storage.from("audio")
-    .uploadToSignedUrl(path, token, body, { contentType: canonical.mimeType })
+    // A year: the object key contains a uuid, so the bytes at a given key never
+    // change. The old 1-hour value made the CDN re-fetch for nothing.
+    .uploadToSignedUrl(path, token, body, {
+      contentType: canonical.mimeType,
+      cacheControl: "31536000",
+    })
 
   if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`)
 
@@ -89,6 +97,7 @@ export async function createProject(
     name,
     audio_url: urlData.publicUrl,
     storage_path: path,
+    peaks: peaks ?? null,
     created_by: createdBy,
     creator_color: creatorColor,
     created_at: new Date().toISOString(),
@@ -99,6 +108,7 @@ export async function createProject(
     name: row.name,
     audio_url: row.audio_url,
     storage_path: row.storage_path,
+    peaks: row.peaks,
     created_by: row.created_by,
     creator_color: row.creator_color,
   })

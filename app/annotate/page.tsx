@@ -18,6 +18,7 @@ import { ensureContributor, saveContributor } from "@/lib/contributor"
 import type { Contributor } from "@/lib/contributor"
 import { addMyProject } from "@/lib/my-projects"
 import { ev } from "@/lib/analytics"
+import { computePeaks, STORED_PEAK_COUNT } from "@/lib/waveform"
 import { canonicalAudioType, fileExtension } from "@/lib/audio-types"
 import { readReferral } from "@/lib/referral"
 import { daysSince, getCreator, touchVisit, updateCreator } from "@/lib/identity"
@@ -289,11 +290,14 @@ export default function AnnotatePage() {
     ev("share_clicked", { noteCount: notes.length })
     setIsSharing(true)
     try {
+      // The buffer was already decoded to draw the waveform here, so the peaks
+      // cost nothing extra and save every future viewer a full download.
       const project = await db.createProject(
         fileName,
         rawFile,
         who.name,
-        who.color
+        who.color,
+        audioBuffer ? computePeaks(audioBuffer, STORED_PEAK_COUNT) : null
       )
       setProjectId(project.id)
 

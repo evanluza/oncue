@@ -19,6 +19,7 @@ import type { Contributor } from "@/lib/contributor"
 import { ev } from "@/lib/analytics"
 import { getMyProjects } from "@/lib/my-projects"
 import * as db from "@/lib/db"
+import { parsePeaks } from "@/lib/waveform"
 import type { AnnotationRow, ProjectRow } from "@/lib/db"
 
 export default function SharePage() {
@@ -99,6 +100,11 @@ export default function SharePage() {
   // object key that stays where it is.
   const audioSrc = project ? db.audioUrlFor(project) : null
 
+  // Peaks stored at upload. When present the page never fetches the audio to
+  // draw the waveform — that fetch plus the <audio> source was two full
+  // downloads of the same file on every single view.
+  const storedPeaks = parsePeaks(project?.peaks)
+
   // Decode audio for waveform
   const decodeAudioFromUrl = useCallback(async (url: string) => {
     try {
@@ -114,10 +120,11 @@ export default function SharePage() {
   }, [])
 
   useEffect(() => {
-    if (audioSrc) {
+    // Only projects from before peaks existed need the decode path.
+    if (audioSrc && !storedPeaks) {
       decodeAudioFromUrl(audioSrc)
     }
-  }, [audioSrc, decodeAudioFromUrl])
+  }, [audioSrc, storedPeaks, decodeAudioFromUrl])
 
   // Audio events
   useEffect(() => {
@@ -357,6 +364,7 @@ export default function SharePage() {
             onAddNote={handleAddNote}
             macroFeedback={macroFeedback}
             audioBuffer={audioBuffer}
+            peaks={storedPeaks}
           />
         </div>
 
@@ -395,7 +403,8 @@ export default function SharePage() {
         />
       )}
 
-      <audio ref={audioRef} src={audioSrc ?? undefined} />
+      {/* metadata only: duration is all this needs before someone presses play */}
+      <audio ref={audioRef} src={audioSrc ?? undefined} preload="metadata" />
     </div>
   )
 }

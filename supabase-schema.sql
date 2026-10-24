@@ -306,3 +306,19 @@ grant execute on function public.delete_annotation(uuid, text) to anon, authenti
 -- ─────────────────────────────────────────────────────────────────────────────
 
 alter table public.projects add column if not exists storage_path text;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Migration 2026-10-24 (step 5): stored waveform peaks
+--
+-- A share page downloaded the whole audio file twice on every view: once via
+-- fetch() to decode it for the waveform, and again as the <audio> source. At a
+-- 4.2MB median file against 5GB monthly egress that is a few hundred views.
+--
+-- Peaks are now computed in the uploader's browser, where the decoded buffer
+-- already exists, and stored here. A share page draws from a few KB of JSON
+-- and doesn't touch the audio until someone presses play.
+--
+-- Projects from before this have peaks null and still decode client-side.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+alter table public.projects add column if not exists peaks jsonb;

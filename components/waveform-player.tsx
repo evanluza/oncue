@@ -5,6 +5,7 @@ import type React from "react"
 import { useRef, useEffect, useMemo, useCallback } from "react"
 import { Loader2 } from "lucide-react"
 import type { Note, MacroType } from "@/lib/types"
+import { computePeaks, resamplePeaks } from "@/lib/waveform"
 
 type WaveformPlayerProps = {
   currentTime: number
@@ -14,28 +15,9 @@ type WaveformPlayerProps = {
   onAddNote: (timestamp: number) => void
   macroFeedback?: { timestamp: number; type: MacroType } | null
   audioBuffer?: AudioBuffer | null
+  /** Precomputed peaks stored at upload. Preferred over decoding the file. */
+  peaks?: number[] | null
   isDecoding?: boolean
-}
-
-function computeWaveformData(audioBuffer: AudioBuffer, barCount: number): number[] {
-  const channelData = audioBuffer.getChannelData(0)
-  const samplesPerBar = Math.floor(channelData.length / barCount)
-  const bars: number[] = []
-
-  for (let i = 0; i < barCount; i++) {
-    let sum = 0
-    const start = i * samplesPerBar
-    const end = Math.min(start + samplesPerBar, channelData.length)
-
-    for (let j = start; j < end; j++) {
-      sum += Math.abs(channelData[j])
-    }
-
-    bars.push(sum / (end - start))
-  }
-
-  const max = Math.max(...bars, 0.001)
-  return bars.map((b) => b / max)
 }
 
 function generateFallbackBars(barCount: number): number[] {
@@ -52,6 +34,7 @@ export function WaveformPlayer({
   onAddNote,
   macroFeedback,
   audioBuffer,
+  peaks,
   isDecoding,
 }: WaveformPlayerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -60,11 +43,13 @@ export function WaveformPlayer({
   const BAR_COUNT = 160
 
   const waveformData = useMemo(() => {
-    if (audioBuffer) {
-      return computeWaveformData(audioBuffer, BAR_COUNT)
-    }
+    // Stored peaks win: they're already here, and using them means the share
+    // page never downloads the audio just to draw this.
+    if (peaks && peaks.length > 0) return resamplePeaks(peaks, BAR_COUNT)
+    // Projects from before peaks existed still decode client-side.
+    if (audioBuffer) return computePeaks(audioBuffer, BAR_COUNT)
     return generateFallbackBars(BAR_COUNT)
-  }, [audioBuffer, BAR_COUNT])
+  }, [peaks, audioBuffer, BAR_COUNT])
 
   // Handle resize
   const draw = useCallback(() => {
