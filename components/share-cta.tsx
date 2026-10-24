@@ -49,6 +49,10 @@ export function ShareCta({ projectId, annotated }: { projectId: string; annotate
               <span aria-hidden>·</span>
             </>
           )}
+          <Link href="/updates" className="hover:text-accent transition-colors">
+            What&apos;s new
+          </Link>
+          <span aria-hidden>·</span>
           <a
             href="https://www.elulabs.com/#contact"
             target="_blank"
