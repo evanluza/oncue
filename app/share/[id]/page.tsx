@@ -288,7 +288,12 @@ export default function SharePage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4">
         <Image src="/oc-icon-orange.png" alt="OnCue" width={32} height={32} />
         <h1 className="text-lg font-semibold text-foreground">Project not found</h1>
-        <p className="text-sm text-muted-foreground">This link may have expired or the project was deleted.</p>
+        {/* Nothing expires, so don't suggest it does — this copy was the only
+            place in the product that implied a time limit, and it read as one
+            to people whose link was simply incomplete. */}
+        <p className="text-sm text-muted-foreground">
+          Check that the link is complete — it may have been cut short when it was copied or pasted.
+        </p>
         <Link
           href="/"
           className="text-sm text-accent hover:underline"

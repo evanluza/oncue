@@ -677,19 +677,31 @@ export default function AnnotatePage() {
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
           />
-          {shareUrl && copyFailed && (
+          {shareUrl && (
             <div className="border-t border-border/50 bg-card/40 px-4 py-4">
               <div className="mx-auto w-full max-w-md space-y-1.5">
-                <p className="text-xs text-muted-foreground">
-                  Your browser blocked the copy — here&apos;s the link:
+                {copyFailed && (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Your browser blocked the copy — here&apos;s the link:
+                    </p>
+                    <input
+                      readOnly
+                      value={shareUrl}
+                      onFocus={(e) => e.currentTarget.select()}
+                      aria-label="Share link"
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground"
+                    />
+                  </>
+                )}
+                {/* Answered where the question actually gets asked — the moment
+                    someone decides whether they can rely on this link. States
+                    today's behaviour rather than guaranteeing it forever, so
+                    adding a retention window later isn't a broken promise. */}
+                <p className="text-xs text-muted-foreground/70">
+                  Links don&apos;t expire — anyone you send this to can open it any time. Keep your own
+                  copy of the file, though: OnCue isn&apos;t a backup.
                 </p>
-                <input
-                  readOnly
-                  value={shareUrl}
-                  onFocus={(e) => e.currentTarget.select()}
-                  aria-label="Share link"
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground"
-                />
               </div>
             </div>
           )}
