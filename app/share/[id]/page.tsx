@@ -358,6 +358,7 @@ export default function SharePage() {
       </header>
 
       <main className="flex flex-1 flex-col min-h-0">
+        {!project.audio_expired && (
         <div className="border-b border-border/50 bg-card/30">
           <WaveformPlayer
             currentTime={currentTime}
@@ -370,7 +371,9 @@ export default function SharePage() {
             peaks={storedPeaks}
           />
         </div>
+        )}
 
+        {!project.audio_expired && (
         <div className="border-b border-border/50">
           <PlaybackControls
             isPlaying={isPlaying}
@@ -380,6 +383,7 @@ export default function SharePage() {
             onSkip={handleSkip}
           />
         </div>
+        )}
 
         {/* The CTA lives inside the scroll area so it lands at the end of the
             notes rather than adding a second scrollbar to the page. */}
