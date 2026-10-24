@@ -101,6 +101,10 @@ NEXT_PUBLIC_EMAIL_DELIVERY=on   # only once transactional email actually exists;
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
 NEXT_PUBLIC_SITE_URL=https://www.oncue.audio  # optional, defaults to www (the host Vercel serves; apex 307s to it)
+NEXT_PUBLIC_REPORT_EMAIL=hello@elulabs.com   # share-page "Report this link"; the link is hidden when unset
+CRON_SECRET=xxx                              # required for /api/cron/expire-audio to run at all
+RETENTION_SWEEP_ENABLED=true                 # only when the sweep should actually delete audio; dry-runs otherwise
+SUPABASE_SERVICE_ROLE_KEY=xxx                # server-only. NEVER prefix NEXT_PUBLIC_ — it bypasses every policy
 ```
 
 ## Design Principles
