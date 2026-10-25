@@ -57,12 +57,20 @@ const FAQS = [
     a: "MP3, WAV and M4A (iPhone Voice Memos) files up to 25MB.",
   },
   {
+    q: "How long is a recording stored?",
+    a: "The audio is kept for 30 days after the last note, and every new note restarts that — so a recording stays playable for as long as it is being worked on. The link itself keeps working either way: once the audio expires the page still shows every note, and you can download them. OnCue isn't a backup, so keep your own copy of the file.",
+  },
+  {
+    q: "Can I keep the notes?",
+    a: "Yes. Any shared track can be exported — copy the notes as plain text, download a .txt, or take a marker CSV that imports straight onto a Reaper timeline. Every line carries its timestamp, so the feedback still makes sense away from OnCue.",
+  },
+  {
     q: "How do I send someone feedback on a recording?",
     a: "Upload their file, listen through it, and type a note whenever something needs saying — each note sticks to the second you were at. Then copy the share link and send it. They open it in a browser with nothing to install and no account to make.",
   },
   {
     q: "Are share links private?",
-    a: "Share links are unlisted: they aren't indexed by search engines, but anyone who has the link can open the track, so only send it to people you trust. There is no password on a link yet.",
+    a: "Share links are unlisted: they aren't indexed by search engines, and a link can't be guessed or found from another one. Anyone who has it can open the track, though, so only send it to people you trust — there is no password on a link yet. Notes can only be edited or deleted from the browser that wrote them.",
   },
 ]
 
@@ -328,8 +336,11 @@ export default function LandingPage() {
             <Image src="/oc-icon-orange.png" alt="OnCue" width={20} height={20} />
             <span className="text-xs text-muted-foreground">oncue</span>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5 text-xs text-muted-foreground/50">
             <FeedbackButton />
+            <Link href="/updates" className="hover:text-accent transition-colors">
+              What&apos;s new
+            </Link>
             <a
               href="https://www.elulabs.com/#contact"
               target="_blank"

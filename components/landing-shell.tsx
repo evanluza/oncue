@@ -129,8 +129,11 @@ export function LandingShell({
             <Image src="/oc-icon-orange.png" alt="OnCue" width={20} height={20} />
             <span className="text-xs text-muted-foreground">oncue</span>
           </Link>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground/50">
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1.5 text-xs text-muted-foreground/50">
             <FeedbackButton />
+            <Link href="/updates" className="hover:text-accent transition-colors">
+              What&apos;s new
+            </Link>
             <a
               href="https://www.elulabs.com/#contact"
               target="_blank"

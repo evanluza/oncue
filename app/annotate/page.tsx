@@ -571,8 +571,12 @@ export default function AnnotatePage() {
             {/* Wrapped because both this and the upload Button are inline-level:
                 as siblings they share a line, which jams the feedback link flush
                 against the primary CTA whenever MyTracks renders nothing. */}
-            <div className="pt-2">
+            <div className="flex items-center justify-center gap-3 pt-2 text-xs text-muted-foreground/60">
               <FeedbackButton />
+              <span aria-hidden>·</span>
+              <Link href="/updates" className="hover:text-accent transition-colors">
+                What&apos;s new
+              </Link>
             </div>
           </div>
         </div>
