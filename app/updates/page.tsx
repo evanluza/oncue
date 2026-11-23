@@ -117,7 +117,16 @@ export default function UpdatesPage() {
           ))}
         </ol>
 
-        <div className="mt-14 rounded-xl border border-border/50 bg-card/30 p-6">
+        {/* The ask belongs here, not only in the footer: someone who has just
+            read what changed is already thinking about what should change next.
+            Every suggestion received so far arrived from a page like this one
+            rather than from mid-task. */}
+        <div className="mt-12 flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-border/40 pt-6 text-sm text-muted-foreground">
+          <span>Something you&apos;d like to see next?</span>
+          <FeedbackButton className="!text-sm !text-accent underline underline-offset-4 hover:!text-accent/80" />
+        </div>
+
+        <div className="mt-10 rounded-xl border border-border/50 bg-card/30 p-6">
           <h2 className="text-base font-semibold text-foreground">Got a track to mark up?</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
             Drop in an mp3, wav or m4a, pin your notes to the exact moments, and send one link back.

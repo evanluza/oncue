@@ -76,7 +76,7 @@ export function FeedbackButton({ className = "" }: { className?: string }) {
         onClick={handleOpen}
         className={`text-xs text-muted-foreground/60 hover:text-foreground transition-colors ${className}`}
       >
-        Have feedback?
+        Suggest a feature
       </button>
 
       {open && (
